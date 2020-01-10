@@ -12,7 +12,8 @@ namespace Hotfix
 		public const int HIDE_LAYER = 2; // Ignore Raycast
 		public const int SHOW_LAYER = 5; // UI
 
-		private AssetObject _asset;
+		private AssetReference _assetRef;
+		private AssetOperationHandle _handle;
 		private UIManifest _manifest;
 		private Canvas _canvas;
 		private Canvas[] _childCanvas;
@@ -132,6 +133,17 @@ namespace Hotfix
 			}
 		}
 
+		/// <summary>
+		/// 是否加载完毕
+		/// </summary>
+		public bool IsDone
+		{
+			get
+			{
+				return _handle.IsDone;
+			}
+		}
+
 
 		public void Init(EWindowType type, EWindowLayer layer)
 		{
@@ -164,11 +176,12 @@ namespace Hotfix
 			if (IsPrepare)
 				callback?.Invoke(this);
 
-			if (_asset == null)
+			if (_assetRef == null)
 			{
 				_callback = callback;
-				_asset = new AssetObject();
-				_asset.Load($"UIPanel/{WindowType}", OnPanelLoad);
+				_assetRef = new AssetReference($"UIPanel/{WindowType}");
+				_handle = _assetRef.LoadAssetAsync<GameObject>();
+				_handle.Completed += Handle_Completed;
 			}
 		}
 		internal void InternalDestroy()
@@ -191,10 +204,10 @@ namespace Hotfix
 			}
 
 			// 卸载面板资源
-			if (_asset != null)
+			if (_assetRef != null)
 			{
-				_asset.UnLoad();
-				_asset = null;
+				_assetRef.Release();
+				_assetRef = null;
 			}
 
 			// 移除所有缓存的事件监听
@@ -204,14 +217,13 @@ namespace Hotfix
 		{
 			OnUpdate();
 		}
-		private void OnPanelLoad(Asset asset)
+		private void Handle_Completed(AssetOperationHandle obj)
 		{
-			if (asset.Result != EAssetResult.OK)
+			if (_handle.AssetObject == null)
 				return;
 
-			Go = _asset.GetMainAsset<GameObject>();
-			Go.SetActive(IsOpen);
-
+			Go = _handle.InstantiateObject;
+			
 			// 设置父类
 			GameObject uiDesktop = UIManager.Instance.GetUIDesktop();
 			Go.transform.SetParent(uiDesktop.transform, false);
@@ -252,11 +264,25 @@ namespace Hotfix
 				OnCreate();
 			}
 
+			// 最后设置是否激活
+			Go.SetActive(IsOpen);
+
 			// 通知UI管理器
 			_callback?.Invoke(this);
 		}
 
 		#region UI组件相关
+		/// <summary>
+		/// 获取窗口里缓存的元素对象
+		/// </summary>
+		/// <param name="path">对象路径</param>
+		protected Transform GetUIElement(string path)
+		{
+			if (_manifest == null)
+				return null;
+			return _manifest.GetUIElement(path);
+		}
+
 		/// <summary>
 		/// 获取窗口里缓存的组件对象
 		/// </summary>

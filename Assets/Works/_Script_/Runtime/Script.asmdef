@@ -1,8 +1,7 @@
 {
     "name": "Script",
     "references": [
-        "MotionEngine",
-        "MotionGame",
+        "MotionFramework",
         "Script.ThirdParty"
     ],
     "optionalUnityReferences": [],

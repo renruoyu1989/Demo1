@@ -7,16 +7,25 @@ using System.Reflection;
 using UnityEngine;
 using MotionFramework;
 using MotionFramework.Resource;
-using MotionFramework.Debug;
+using MotionFramework.Console;
 
-public class ILRManager : IModule
+public class ILRManager : ModuleSingleton<ILRManager>, IMotionModule
 {
-	public static readonly ILRManager Instance = new ILRManager();
+	/// <summary>
+	/// 游戏模块创建参数
+	/// </summary>
+	public class CreateParameters
+	{
+		/// <summary>
+		/// 是否启用ILRuntime，否则使用mono模式运行
+		/// </summary>
+		public bool IsEnableILRuntime;
+	}
 
-	public ILRuntime.Runtime.Enviorment.AppDomain ILRDomain { private set; get; }
 	private MemoryStream _dllStream;
 	private MemoryStream _pdbStream;
 	private Assembly _monoAssembly;
+	private bool _isEnableILRuntime;
 
 	// 热更新层相关函数
 	private IStaticMethod _startFun;
@@ -25,23 +34,25 @@ public class ILRManager : IModule
 	private IStaticMethod _uiLanguageFun;
 
 	/// <summary>
+	/// 热更新的程序域
+	/// </summary>
+	public ILRuntime.Runtime.Enviorment.AppDomain ILRDomain { private set; get; }
+
+	/// <summary>
 	/// 热更新所有类型集合
 	/// </summary>
 	public List<Type> HotfixAssemblyTypes { private set; get; }
 
-	/// <summary>
-	/// 是否启用ILRuntime
-	/// </summary>
-	public bool EnableILRuntime { set; get; } = true;
 
+	void IMotionModule.OnCreate(System.Object param)
+	{
+		CreateParameters createParam = param as CreateParameters;
+		if (createParam == null)
+			throw new Exception($"{nameof(ILRManager)} create param is invalid.");
 
-	private ILRManager()
-	{
+		_isEnableILRuntime = createParam.IsEnableILRuntime;
 	}
-	public void Awake()
-	{
-	}
-	public void Start()
+	void IMotionModule.OnStart()
 	{
 		if (Application.isEditor || Debug.isDebugBuild)
 			LoadHotfixAssemblyWithPDB();
@@ -53,27 +64,14 @@ public class ILRManager : IModule
 		if (_startFun != null)
 			_startFun.Invoke();
 	}
-	public void Update()
+	void IMotionModule.OnUpdate()
 	{
 		if (_updateFun != null)
 			_updateFun.Invoke();
 	}
-	public void LateUpdate()
+	void IMotionModule.OnGUI()
 	{
-		if (_lateUpdateFun != null)
-			_lateUpdateFun.Invoke();
-	}
-	public void OnGUI()
-	{
-		DebugConsole.GUILable($"[{nameof(ILRManager)}] EnableILRuntime : {EnableILRuntime}");
-	}
-
-	/// <summary>
-	/// 是否初始化完毕
-	/// </summary>
-	public bool IsInitOK()
-	{
-		return HotfixAssemblyTypes != null;
+		AppConsole.GUILable($"[{nameof(ILRManager)}] EnableILRuntime : {_isEnableILRuntime}");
 	}
 
 	/// <summary>
@@ -101,22 +99,19 @@ public class ILRManager : IModule
 		return (string)_uiLanguageFun.Invoke(key);
 	}
 
-
 	// 加载热更的动态库文件
 	private void LoadHotfixAssembly()
 	{
 		TextAsset dllAsset = LoadDLL();
 
-		if (EnableILRuntime)
+		if (_isEnableILRuntime)
 		{
-			LogSystem.Log(ELogType.Log, "ILRuntime模式");
 			_dllStream = new MemoryStream(dllAsset.bytes);
 			ILRDomain = new ILRuntime.Runtime.Enviorment.AppDomain();
 			ILRDomain.LoadAssembly(_dllStream, null, null);
 		}
 		else
 		{
-			LogSystem.Log(ELogType.Log, "Mono模式");
 			_monoAssembly = Assembly.Load(dllAsset.bytes, null);
 		}
 	}
@@ -125,9 +120,8 @@ public class ILRManager : IModule
 		TextAsset dllAsset = LoadDLL();
 		TextAsset pdbAsset = LoadPDB();
 
-		if (EnableILRuntime)
+		if (_isEnableILRuntime)
 		{
-			LogSystem.Log(ELogType.Log, "ILRuntime模式");
 			_dllStream = new MemoryStream(dllAsset.bytes);
 			_pdbStream = new MemoryStream(pdbAsset.bytes);
 			var symbolReader = new Mono.Cecil.Pdb.PdbReaderProvider();
@@ -136,17 +130,18 @@ public class ILRManager : IModule
 		}
 		else
 		{
-			LogSystem.Log(ELogType.Log, "Mono模式");
 			_monoAssembly = Assembly.Load(dllAsset.bytes, pdbAsset.bytes);
 		}
 	}
 	private TextAsset LoadDLL()
 	{
-		return ResourceManager.Instance.SyncLoad<TextAsset>($"Assembly/{ILRDefine.StrMyHotfixDLLFileName}");
+		string location = $"Assembly/{ILRDefine.StrMyHotfixDLLFileName}";
+		return ResourceManager.Instance.SyncLoad<TextAsset>(location);
 	}
 	private TextAsset LoadPDB()
 	{
-		return ResourceManager.Instance.SyncLoad<TextAsset>($"Assembly/{ILRDefine.StrMyHotfixPDBFileName}");
+		string location = $"Assembly/{ILRDefine.StrMyHotfixPDBFileName}";
+		return ResourceManager.Instance.SyncLoad<TextAsset>(location);
 	}
 
 	// 初始化热更程序
@@ -158,7 +153,7 @@ public class ILRManager : IModule
 		string lateUpdateFunName = "LateUpdate";
 		string uiLanguageFunName = "UILanguage";
 
-		if (EnableILRuntime)
+		if (_isEnableILRuntime)
 		{
 			ILRHelper.Init(ILRDomain);
 			_startFun = new ILRStaticMethod(ILRDomain, typeName, startFunName, 0);

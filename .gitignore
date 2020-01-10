@@ -4,6 +4,7 @@ obj/
 Library/
 Temp/
 BuildBundles/
+Sandbox/
 
 Assets/MotionFramework
 Assets/MotionFramework.meta
@@ -11,6 +12,8 @@ Assets/StreamingAssets
 Assets/StreamingAssets.meta
 Assets/Works/_Script_/Runtime/ILBinding
 Assets/Works/_Script_/Runtime/ILBinding.meta
+Assets/Works/Resource/Assembly
+Assets/Works/Resource/Assembly.meta
 
 *.sln
 *.suo
