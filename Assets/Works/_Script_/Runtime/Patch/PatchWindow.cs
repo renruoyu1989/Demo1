@@ -8,7 +8,7 @@ using MotionFramework.Patch;
 using MotionFramework.Resource;
 using MotionFramework.Event;
 
-public class PatchWindow : ModuleSingleton<PatchWindow>, IMotionModule
+public class PatchWindow : ModuleSingleton<PatchWindow>, IModule
 {
 	private AssetReference _assetRef;
 	private System.Action _clickYes;
@@ -23,18 +23,15 @@ public class PatchWindow : ModuleSingleton<PatchWindow>, IMotionModule
 	private Text _messageBoxContent;
 
 
-	void IMotionModule.OnCreate(object createParam)
+	void IModule.OnCreate(object createParam)
 	{
 		_assetRef = new AssetReference("UIPanel/PatchWindow");
 		_assetRef.LoadAssetAsync<GameObject>().Completed += Handle_Completed;
 	}
-	void IMotionModule.OnStart()
+	void IModule.OnUpdate()
 	{
 	}
-	void IMotionModule.OnUpdate()
-	{
-	}
-	void IMotionModule.OnGUI()
+	void IModule.OnGUI()
 	{
 	}
 
@@ -56,13 +53,27 @@ public class PatchWindow : ModuleSingleton<PatchWindow>, IMotionModule
 		_messageBoxContent = _manifest.GetUIComponent<Text>("PatchWindow/UIWindow/MessgeBox/txt_content");
 		_manifest.GetUIComponent<Button>("PatchWindow/UIWindow/MessgeBox/btn_yes").onClick.AddListener(OnClickMessageBoxOK);
 
-		EventManager.Instance.AddListener(EPatchEventMessageTag.PatchSystemDispatchEvents.ToString(), OnHandleEvent);
+		EventManager.Instance.AddListener<PatchEventMessageDefine.PatchStatesChange>(OnHandleEvent);
+		EventManager.Instance.AddListener<PatchEventMessageDefine.FoundForceInstallAPP>(OnHandleEvent);
+		EventManager.Instance.AddListener<PatchEventMessageDefine.FoundUpdateFiles>(OnHandleEvent);
+		EventManager.Instance.AddListener<PatchEventMessageDefine.DownloadFilesProgress>(OnHandleEvent);
+		EventManager.Instance.AddListener<PatchEventMessageDefine.GameVersionRequestFailed>(OnHandleEvent);
+		EventManager.Instance.AddListener<PatchEventMessageDefine.WebPatchManifestDownloadFailed>(OnHandleEvent);
+		EventManager.Instance.AddListener<PatchEventMessageDefine.WebFileDownloadFailed>(OnHandleEvent);
+		EventManager.Instance.AddListener<PatchEventMessageDefine.WebFileMD5VerifyFailed>(OnHandleEvent);
 
 		SendOperationEvent(EPatchOperation.BeginingRequestGameVersion);
 	}
 	private void OnWindowDestroy()
 	{
-		EventManager.Instance.RemoveListener(EPatchEventMessageTag.PatchSystemDispatchEvents.ToString(), OnHandleEvent);
+		EventManager.Instance.RemoveListener<PatchEventMessageDefine.PatchStatesChange>(OnHandleEvent);
+		EventManager.Instance.RemoveListener<PatchEventMessageDefine.FoundForceInstallAPP>(OnHandleEvent);
+		EventManager.Instance.RemoveListener<PatchEventMessageDefine.FoundUpdateFiles>(OnHandleEvent);
+		EventManager.Instance.RemoveListener<PatchEventMessageDefine.DownloadFilesProgress>(OnHandleEvent);
+		EventManager.Instance.RemoveListener<PatchEventMessageDefine.GameVersionRequestFailed>(OnHandleEvent);
+		EventManager.Instance.RemoveListener<PatchEventMessageDefine.WebPatchManifestDownloadFailed>(OnHandleEvent);
+		EventManager.Instance.RemoveListener<PatchEventMessageDefine.WebFileDownloadFailed>(OnHandleEvent);
+		EventManager.Instance.RemoveListener<PatchEventMessageDefine.WebFileMD5VerifyFailed>(OnHandleEvent);
 	}
 
 	/// <summary>
@@ -206,6 +217,6 @@ public class PatchWindow : ModuleSingleton<PatchWindow>, IMotionModule
 	{
 		PatchEventMessageDefine.OperationEvent msg = new PatchEventMessageDefine.OperationEvent();
 		msg.operation = operation;
-		EventManager.Instance.SendMessage(EPatchEventMessageTag.PatchWindowDispatchEvents.ToString(), msg);
+		EventManager.Instance.SendMessage(msg);
 	}
 }
