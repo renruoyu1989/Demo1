@@ -15,7 +15,7 @@ MonoBehaviour:
   Elements:
   - FolderPath: Assets/Works/Resource
     PackRule: 0
-    NameRule: 1
+    LabelRule: 1
   - FolderPath: Assets/WorksArt/Panel/Sprite
     PackRule: 0
-    NameRule: 2
+    LabelRule: 2

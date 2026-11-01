@@ -18,3 +18,5 @@ Assets/Works/Resource/Assembly.meta
 *.sln
 *.suo
 *.csproj
+/Logs
+/*.vsconfig

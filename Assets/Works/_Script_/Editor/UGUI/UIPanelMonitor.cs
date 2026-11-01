@@ -2,7 +2,9 @@
 using UnityEngine.UI;
 using UnityEditor;
 
-#if UNITY_2018_4_OR_NEWER
+#if UNITY_2020_1_OR_NEWER
+using UnityEditor.SceneManagement;
+#elif UNITY_2018_4_OR_NEWER
 using UnityEditor.Experimental.SceneManagement;
 #endif
 

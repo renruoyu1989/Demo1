@@ -142,8 +142,8 @@ public class GameLauncher : MonoBehaviour
 
 		// 创建资源管理器
 		var resourceCreateParam = new ResourceManager.CreateParameters();
-		resourceCreateParam.AssetRootPath = GameDefine.AssetRootPath;
-		resourceCreateParam.AssetSystemMode = AssetSystemMode;
+		resourceCreateParam.LocationRoot = GameDefine.AssetRootPath;
+		resourceCreateParam.SimulationOnEditor = AssetSystemMode == EAssetSystemMode.Resources;
 		resourceCreateParam.BundleServices = bundleServices;
 		MotionEngine.CreateModule<ResourceManager>(resourceCreateParam);
 
