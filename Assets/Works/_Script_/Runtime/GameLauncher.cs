@@ -38,6 +38,9 @@ public class GameLauncher : MonoBehaviour
 	{
 		CreateGameModules();
 
+		// 初始化图集延迟绑定（必须在资源系统创建之后）
+		SpriteAtlasLoader.Initialize();
+
 		// 初始化多语言系统（必须在资源系统创建之后）
 		LocalizationManager.Initialize();
 

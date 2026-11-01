@@ -28,11 +28,38 @@ SpriteAtlas:
       allowAlphaSplitting: 0
       enableRotation: 0
       enableTightPacking: 0
+      enableAlphaDilation: 0
+    secondaryTextureSettings: {}
     variantMultiplier: 1
     packables:
     - {fileID: 102900000, guid: 1288fd74c50c1d7429a2b838eaedfde2, type: 3}
-    totalSpriteSurfaceArea: 779457
     bindAsDefault: 0
+    isAtlasV2: 0
+    cachedData: {fileID: 0}
+    packedSpriteRenderDataKeys:
+    - 1e634770eced7764da43936864cb12bd: 21300000
+    - 93548251ad78c4d4296231e8f9f91c70: 21300000
+    - c3106c02a02206d4ea3397d409513960: 21300000
+    - 9f4796a34765acb4fb90628c34482926: 21300000
+    - ccdf4f05d8a16144087d4cf7b30fde2e: 21300000
+    - 7c44b7152051ec249b651f963d2bd02c: 21300000
+    - 95fa0e9612ba06043b08685c67a1cc6c: 21300000
+    - 5d83a027a61fdc94ba26018daaba3a06: 21300000
+    - 9ac456a7576002f42bb913a904a57fc8: 21300000
+    - 3a41acd88fa3f6a4e9c634b99e4f37c8: 21300000
+    - 99a2dc49ed3d4ea4d8bf1fa5a3f2aeae: 21300000
+    - 2d005889bb15d3a47aa60c75432ac0c7: 21300000
+    - 131352f9a0b3a8e459a8913f75a459a4: 21300000
+    - 0365554ae0d46494aab421695a91e722: 21300000
+    - 595f065ad7ec5824c8c9c4beb8927dc7: 21300000
+    - c88eeb8a040357a4a9b17cb9a6a366e3: 21300000
+    - f602710b62edb3049ab810ed629e7127: 21300000
+    - 75d7a18ba56a7234f81600d5163f46c6: 21300000
+    - 7688a27c084df52458015259c495bcbb: 21300000
+    - c5fec6bc0d1b9ec47951435294f4dbb9: 21300000
+    - 0e56cf0d129e7654689ee319e39e6479: 21300000
+    - e508840eabfc4f74aa6dd82ce6cafee8: 21300000
+    - 46abcd4f2c4a59c4ba4d87fb7368796a: 21300000
   m_MasterAtlas: {fileID: 0}
   m_PackedSprites:
   - {fileID: 21300000, guid: 1e634770eced7764da43936864cb12bd, type: 3}
@@ -82,5 +109,6 @@ SpriteAtlas:
   - Loading_Frame_0015
   - Loading_Frame_0014
   - Loading_Frame_0011
+  m_RenderDataMap: {}
   m_Tag: UILoading
   m_IsVariant: 0

@@ -21,7 +21,7 @@ SpriteAtlas:
       crunchedCompression: 0
       sRGB: 1
     platformSettings:
-    - serializedVersion: 2
+    - serializedVersion: 3
       m_BuildTarget: DefaultTexturePlatform
       m_MaxTextureSize: 4096
       m_ResizeAlgorithm: 0
@@ -31,7 +31,9 @@ SpriteAtlas:
       m_CrunchedCompression: 0
       m_AllowsAlphaSplitting: 0
       m_Overridden: 0
+      m_IgnorePlatformSupport: 0
       m_AndroidETC2FallbackOverride: 0
+      m_ForceMaximumCompressionQuality_BC6H_BC7: 1
     packingSettings:
       serializedVersion: 2
       padding: 2
@@ -39,11 +41,58 @@ SpriteAtlas:
       allowAlphaSplitting: 0
       enableRotation: 0
       enableTightPacking: 0
+      enableAlphaDilation: 0
+    secondaryTextureSettings: {}
     variantMultiplier: 1
     packables:
     - {fileID: 102900000, guid: a6ff3a27e3e85d344bed050e9aad5be0, type: 3}
-    totalSpriteSurfaceArea: 976749
     bindAsDefault: 0
+    isAtlasV2: 0
+    cachedData: {fileID: 0}
+    packedSpriteRenderDataKeys:
+    - 98ab7b10a367b1d41819a773f2aaea3d: 21300000
+    - 9308d350204138641bd2a19cdcfd268f: 21300000
+    - 6db16bc0197ed884d91def2b00b813cd: 21300000
+    - 9af132a1c6834b049a741b3111211430: 21300000
+    - 7927cbb110cabfd42971dda5c689d43b: 21300000
+    - b6cfadd1819657f4ba4c522936caf46f: 21300000
+    - 502d3be1122c0194e8f8856d2c280dac: 21300000
+    - d3712fe276e89554c9ede1382de6253a: 21300000
+    - fbf7b03346d6fd54ba22b4232c3bec84: 21300000
+    - 5a45a153ce04ade47a8647bc04408902: 21300000
+    - 6343a5f36b9b30243abd75ab57b2bbd6: 21300000
+    - 04f97634227c063408e32624c1721260: 21300000
+    - 120f31849f180214f877a50fab39a4cb: 21300000
+    - f3b162e4b76405646a8a9e51d2aae7fd: 21300000
+    - 92924215ed1efc446b08304fd58a3d09: 21300000
+    - 8d306385381e9984ca868d58a4cd4018: 21300000
+    - 567abba5b0507f54da66f6f38ad3b77a: 21300000
+    - 7ff9afa51e85f1d47bfba9b608414e11: 21300000
+    - 59d87526176caab439f96d2ffbea2424: 21300000
+    - e0d857c667ad8a24bb3f0d4a58646307: 21300000
+    - 556cf16761393b64982eb18e2df70777: 21300000
+    - dbd3a7a77e2a2ef4b83039847b813663: 21300000
+    - a834c4c7a505b014aa3af1f5b43eef48: 21300000
+    - 8fbc5d98e9d2747488c3407efeeaac83: 21300000
+    - bcdff4f8e715bb44baf7b582dbc55218: 21300000
+    - 5db77779c1e2b7847a477e55737369bc: 21300000
+    - 7367359945a84a7438d24f8cb069e8ee: 21300000
+    - 0df002b96eeab8f4ca82d3b30ffdb0c5: 21300000
+    - 899d2e1a1f1233c419c8b9652dc03618: 21300000
+    - 246d678a171d6b1479b55d8a96061267: 21300000
+    - 7dfb899aeb78fc3419ca4a9142df6472: 21300000
+    - 56cafa9a8953bac47b343db9f6434f5f: 21300000
+    - 2bd40caa93e689444bed11d4e9052d36: 21300000
+    - c422ec0bc61bcff4ea3e2331c37cc88b: 21300000
+    - 1fcaf74bcdff6ed47bc907ba197d3728: 21300000
+    - fee4319ba0c083a408eaf1f03d266408: 21300000
+    - b15961acbc6af2d4bbe78dde4c6b3795: 21300000
+    - 736758bc3cf69c74c8d644b0c9ede7b1: 21300000
+    - 114d492dfd00f124794410ca7ceb6a6f: 21300000
+    - 66130f6d4f308934ea0d5d6ab4ecd804: 21300000
+    - 3767171ffd06bb34fa63384fe6a3e8fc: 21300000
+    - c0101a7fe91828f409047ff154ead118: 21300000
+    - 922e44df3a3a04d459baedbaa659e86b: 21300000
   m_MasterAtlas: {fileID: 0}
   m_PackedSprites:
   - {fileID: 21300000, guid: 98ab7b10a367b1d41819a773f2aaea3d, type: 3}
@@ -133,5 +182,6 @@ SpriteAtlas:
   - Toggle_Radio_Press_Overlay
   - Text_Field_Icon_Pass
   - Button_Rectangular_Medium_Background
+  m_RenderDataMap: {}
   m_Tag: UICommon
   m_IsVariant: 0

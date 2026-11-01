@@ -312,16 +312,7 @@ namespace Hotfix
 		/// </summary>
 		protected Font GetDefaultFont()
 		{
-			if (Go == null)
-				return null;
-
-			Text[] texts = Go.GetComponentsInChildren<Text>(true);
-			for (int i = 0; i < texts.Length; i++)
-			{
-				if (texts[i].font != null)
-					return texts[i].font;
-			}
-			return null;
+			return UIFontProvider.DefaultFont;
 		}
 
 		/// <summary>

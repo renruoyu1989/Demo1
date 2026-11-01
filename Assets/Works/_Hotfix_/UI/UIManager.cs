@@ -216,6 +216,9 @@ namespace Hotfix
 		// 准备完毕
 		private void OnWindowPrepare(UIWindow window)
 		{
+			// 把内置字体替换成支持中文的字体
+			UIFontProvider.ApplyFont(window.Go);
+
 			window.OnRefresh();
 			OnSortWindowDepth(window.WindowLayer);
 			OnSetWindowVisible(window.WindowLayer);			
