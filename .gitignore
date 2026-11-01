@@ -20,3 +20,4 @@ Assets/Works/Resource/Assembly.meta
 *.csproj
 /Logs
 /*.vsconfig
+/Temp_Trash

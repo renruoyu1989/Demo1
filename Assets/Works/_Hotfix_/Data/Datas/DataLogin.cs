@@ -1,36 +1,26 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using MotionFramework.Network;
-using MotionFramework.Event;
 
 namespace Hotfix
 {
+	/// <summary>
+	/// 登录数据（单机版）
+	/// 注意：没有服务器校验，输入账号后直接读取本地存档进入城镇
+	/// </summary>
 	public class DataLogin : DataBase
 	{
 		private string _account;
-		private string _password;
 
 		public override void Start()
 		{
 			AddEventListener(HotfixEventMessageTag.LoginEvent, OnHandleEventMessage);
-			EventManager.Instance.AddListener<NetworkEventMessageDefine.ConnectSuccess>(OnHandleMonoEventMessage);
 		}
 		public override void Update()
 		{
 		}
 		public override void Destroy()
 		{
-			EventManager.Instance.RemoveListener<NetworkEventMessageDefine.ConnectSuccess>(OnHandleMonoEventMessage);
-		}
-		public override void OnHandleNetMessage(IHotfixNetMessage msg)
-		{
-			if (msg is R2C_Login)
-			{
-				R2C_Login message = msg as R2C_Login;
-				HotfixLogger.Log($"登录成功：{message.Address} {message.Key}");
-				HotfixFsmManager.Instance.ChangeState(EHotfixStateType.Town);
-			}
 		}
 
 		private void OnHandleEventMessage(IHotfixEventMessage msg)
@@ -39,31 +29,21 @@ namespace Hotfix
 			{
 				LoginEvent.ConnectServer message = msg as LoginEvent.ConnectServer;
 				_account = message.Account;
-				_password = message.Password;
+				HotfixLogger.Log($"单机模式登录：{_account}");
 
-				// 连接到ET5.0服务器
-				//NetworkManager.Instance.ConnectServer("127.0.0.1", 10002);
+				// 切换存档槽并载入该账号的存档
+				DataManager.Instance.SetAccount(_account);
+				DataManager.Instance.LoadAll(_account);
 
-				// TODO 跳过服务器直接进入游戏
+				DataPlayer dataPlayer = DataManager.Instance.GetData<DataPlayer>();
+				if (dataPlayer != null)
+					dataPlayer.SetAccount(_account);
+
+				// 登录后立即存一次档（首次登录相当于创建存档）
+				DataManager.Instance.SaveAll(_account);
+
 				HotfixFsmManager.Instance.ChangeState(EHotfixStateType.Town);
 			}
-		}
-		private void OnHandleMonoEventMessage(IEventMessage msg)
-		{
-			// 当服务器连接成功
-			if(msg is NetworkEventMessageDefine.ConnectSuccess)
-			{
-				SendLoginMsg(_account, _password);
-			}
-		}
-
-		private static void SendLoginMsg(string account, string password)
-		{
-			C2R_Login msg = new C2R_Login();
-			msg.RpcId = 100;
-			msg.Account = account;
-			msg.Password = password;
-			HotfixNetManager.Instance.SendHotfixMsg(msg);
 		}
 	}
 }

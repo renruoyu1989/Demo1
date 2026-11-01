@@ -308,6 +308,23 @@ namespace Hotfix
 		}
 
 		/// <summary>
+		/// 获取界面里第一个可用的字体（用于代码动态创建的文本）
+		/// </summary>
+		protected Font GetDefaultFont()
+		{
+			if (Go == null)
+				return null;
+
+			Text[] texts = Go.GetComponentsInChildren<Text>(true);
+			for (int i = 0; i < texts.Length; i++)
+			{
+				if (texts[i].font != null)
+					return texts[i].font;
+			}
+			return null;
+		}
+
+		/// <summary>
 		/// 监听按钮点击事件
 		/// </summary>
 		protected void AddButtonListener(string path, UnityEngine.Events.UnityAction call)

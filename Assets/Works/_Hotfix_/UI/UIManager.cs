@@ -331,10 +331,14 @@ namespace Hotfix
 
 		private void CollectTypes()
 		{
-			List<Type> types = ILRManager.Instance.HotfixAssemblyTypes;
-			for (int i = 0; i < types.Count; i++)
+			Type[] types = HotfixTypeHelper.GetAllTypes();
+			for (int i = 0; i < types.Length; i++)
 			{
 				System.Type type = types[i];
+
+				// 只处理窗口类型
+				if (type.IsAbstract || typeof(UIWindow).IsAssignableFrom(type) == false)
+					continue;
 
 				// 判断属性标签
 				if (Attribute.IsDefined(type, typeof(WindowAttribute)))

@@ -44,6 +44,16 @@ namespace Hotfix
 				AudioManager.Instance.Mute(EAudioLayer.Voice, value);
 			}
 		}
+		/// <summary>
+		/// 把音频设置写入本地（音量/开关的setter已经写入，这里统一落盘）
+		/// </summary>
+		public static void SaveAudioSetting()
+		{
+			PlayerPrefs.SetFloat(StrAudioVolumeKey, AudioVolume);
+			GameUtility.PlayerSetBool(StrMusicMuteKey, MusicMute);
+			GameUtility.PlayerSetBool(StrSoundMuteKey, SoundMute);
+			PlayerPrefs.Save();
+		}
 		public static bool SoundMute
 		{
 			get

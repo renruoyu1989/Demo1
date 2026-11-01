@@ -9,7 +9,38 @@ namespace Hotfix
 		public abstract void Start();
 		public abstract void Update();
 		public abstract void Destroy();
-		public abstract void OnHandleNetMessage(IHotfixNetMessage msg);
+
+		#region 存档相关
+		/// <summary>
+		/// 存档键（默认使用类名）
+		/// </summary>
+		public virtual string SaveKey
+		{
+			get { return GetType().Name; }
+		}
+
+		/// <summary>
+		/// 收集存档数据（返回null代表不参与存档）
+		/// </summary>
+		public virtual string CollectSaveData()
+		{
+			return null;
+		}
+
+		/// <summary>
+		/// 应用存档数据
+		/// </summary>
+		public virtual void ApplySaveData(string json)
+		{
+		}
+
+		/// <summary>
+		/// 重置为默认数据（没有存档时调用）
+		/// </summary>
+		public virtual void ResetData()
+		{
+		}
+		#endregion
 
 		#region 事件相关
 		private readonly Dictionary<HotfixEventMessageTag, List<Action<IHotfixEventMessage>>> _cachedListener = new Dictionary<HotfixEventMessageTag, List<Action<IHotfixEventMessage>>>();

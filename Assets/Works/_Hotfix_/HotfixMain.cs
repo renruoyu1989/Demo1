@@ -2,11 +2,28 @@
 
 namespace Hotfix
 {
-	public static class HotfixMain
+	/// <summary>
+	/// 游戏业务逻辑入口
+	/// 注意：单机版没有热更程序集，业务代码直接编译进工程
+	/// </summary>
+	public sealed class HotfixMain : IGameLogic
 	{
-		public static void Start()
+		private static HotfixMain _instance;
+
+		/// <summary>
+		/// 注册到启动层
+		/// 注意：AfterSceneLoad 早于场景对象的 Awake，能保证启动层拿到实例
+		/// </summary>
+		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+		private static void Register()
 		{
-			HotfixLogger.Log("hello hotfix world");
+			_instance = new HotfixMain();
+			GameLogicBridge.Register(_instance);
+		}
+
+		public void Start()
+		{
+			HotfixLogger.Log("game logic start");
 
 			AudioPlayerSetting.InitAudioSetting();
 
@@ -15,9 +32,6 @@ namespace Hotfix
 
 			// 初始化界面管理器
 			UIManager.Instance.Start();
-
-			// 初始化网络管理器
-			HotfixNetManager.Instance.Start();
 
 			// 初始化状态机管理器
 			var prepare = new HotfixStatePrepare(EHotfixStateType.Prepare);
@@ -30,23 +44,16 @@ namespace Hotfix
 			HotfixFsmManager.Instance.AddState(town);
 			HotfixFsmManager.Instance.Run(EHotfixStateType.Prepare);
 		}
-		public static void Update()
+
+		public void Update()
 		{
 			HotfixFsmManager.Instance.Update();
-			HotfixNetManager.Instance.Update();
 			DataManager.Instance.Update();
 			UIManager.Instance.Update();
 		}
-		public static void LateUpdate()
+
+		public void LateUpdate()
 		{
-		}
-		public static string UILanguage(string key)
-		{
-			CfgUILanguageTab table = CfgUILanguage.Instance.GetCfgTab(key.GetHashCode());
-			if (table == null)
-				return key;
-			else
-				return table.Lang;
 		}
 	}
 }

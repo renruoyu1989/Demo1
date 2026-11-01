@@ -8,27 +8,47 @@ public class UILocalizeDropdown : MonoBehaviour
 {
 	public List<string> Keywords = new List<string>();
 
-	void Awake ()
-	{
-		Dropdown dropdown = GetComponent<Dropdown>();
-		if (dropdown != null)
-		{
-			//当前文本
-			string defaultKeyword = GetKeyword(dropdown.value);
-			dropdown.captionText.text = ILRManager.Instance.UILanguage(defaultKeyword);
+	private Dropdown _dropdown;
 
-			//下拉列表
-			for (int i = 0; i < dropdown.options.Count; i++)
-			{
-				string keyword = GetKeyword(i);
-				dropdown.options[i].text = ILRManager.Instance.UILanguage(keyword);
-			}
+	private void Awake()
+	{
+		_dropdown = GetComponent<Dropdown>();
+	}
+	private void OnEnable()
+	{
+		LocalizationManager.OnLanguageChanged += HandleLanguageChanged;
+		Refresh();
+	}
+	private void OnDisable()
+	{
+		LocalizationManager.OnLanguageChanged -= HandleLanguageChanged;
+	}
+
+	private void HandleLanguageChanged(ELanguage language)
+	{
+		Refresh();
+	}
+	private void Refresh()
+	{
+		if (_dropdown == null)
+			return;
+
+		// 当前文本
+		string defaultKeyword = GetKeyword(_dropdown.value);
+		if (_dropdown.captionText != null)
+			_dropdown.captionText.text = LocalizationManager.Get(defaultKeyword);
+
+		// 下拉列表
+		for (int i = 0; i < _dropdown.options.Count; i++)
+		{
+			string keyword = GetKeyword(i);
+			_dropdown.options[i].text = LocalizationManager.Get(keyword);
 		}
 	}
 
 	private string GetKeyword(int index)
 	{
-		for(int i=0; i<Keywords.Count; i++)
+		for (int i = 0; i < Keywords.Count; i++)
 		{
 			if (i == index)
 				return Keywords[i];
