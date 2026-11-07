@@ -28,7 +28,14 @@ namespace Hotfix
 		private FerryBoatView _boat;
 		private float _boatHalfWidth = 92f;
 		private float _boatHeight = 40f;
+		private float _lastBoatX;
 		private FerryDockSlots _dockSlots;
+
+		/// <summary>上一次布局时的停靠侧，用于识别「只换侧 = 岸上搬船」</summary>
+		private int _lastBoatSide = 1;
+
+		/// <summary>本次位移是不是岸上搬船（河里划船一律保持船夫原有朝向，不改方向）</summary>
+		private bool _carryMove;
 
 		/// <summary>水面矩形（多河道关卡有多条，按 X 就近取用）</summary>
 		private class WaterRect
@@ -288,16 +295,26 @@ namespace Hotfix
 			_boatHeight = boat != null ? boat.rect.height : 40f;
 		}
 
-		/// <summary>船底所在的设计稿 Y：贴住当前这条河的水面，再上浮一点让吃水线落在船体下方</summary>
+		/// <summary>
+		/// 船底所在的设计稿 Y（Y 向下 = 数值越大越靠屏幕下方）。
+		/// 原版船用的是中心 pivot：船中心 = 水面 + boatH*BoatSinkRatio，
+		/// 因此船底 = 水面 - boatH*(0.5 - BoatSinkRatio)。
+		/// 本工程所有 Sprite 统一用底边 pivot，必须补回这半个船高，
+		/// 否则整条船会相对船夫/乘客抬高 boatH*0.5（boatH=34 时约 17~20px）。
+		/// </summary>
 		private float BoatBottomY(float imgX)
 		{
-			return WaterSurfaceY(imgX) - _boatHeight * FerryDefine.BoatSinkRatio;
+			return WaterSurfaceY(imgX) + _boatHeight * (0.5f - FerryDefine.BoatSinkRatio);
 		}
 
-		/// <summary>甲板线的设计稿 Y（船上乘客的落脚点）</summary>
-		private float BoatDeckY(float boatBottomY)
+		/// <summary>
+		/// 甲板线的设计稿 Y（船上乘客/船夫的落脚点）。
+		/// 原版 _boatDeckY = 船中心 + boatH*BoardDeckRatio = 水面 + boatH*(BoatSinkRatio+BoardDeckRatio)，
+		/// 与船用哪种 pivot 无关：修船的位置时不能让角色跟着挪。
+		/// </summary>
+		private float BoatDeckY(float imgX)
 		{
-			return boatBottomY - _boatHeight * FerryDefine.BoardDeckRatio;
+			return WaterSurfaceY(imgX) - _boatHeight * (FerryDefine.BoatSinkRatio + FerryDefine.BoardDeckRatio);
 		}
 
 		/// <summary>
@@ -366,25 +383,43 @@ namespace Hotfix
 			float shore = dock.HalfWidth > 0f ? dock.HalfWidth : 96f;
 			float boatX = dock.CenterX + _session.BoatSide * (shore + _boatHalfWidth + FerryDefine.BoatShoreGap);
 			float boatBottom = BoatBottomY(boatX);
-			float deckY = BoatDeckY(boatBottom);
+			float deckY = BoatDeckY(boatX);
 			Vector3 boatPosition = _anchor.ToWorld(boatX, boatBottom);
+
+			// 只识别「岸上搬船」这一步：停靠侧翻转 + LastMoveShore。
+			// 河里划船完全不处理方向：原版 _hero 从不 flipX，default/right/left 三行帧朝向也一致，
+			// 船夫朝向始终不变；只有岸上 Carrier 才按行进方向翻转。
+			// LastMoveShore 会残留到后续上船/下船，所以必须靠 sideChanged 限定，且其余情况不清标记，
+			// 否则一次 Board/Unload 就会打断正在进行的搬船动画。
+			bool sideChanged = _lastBoatSide != _session.BoatSide;
+			if (instant)
+				_carryMove = false;
+			else if (sideChanged && _session.LastMoveShore)
+			{
+				_carryMove = true;
+				SetupCarryPath(dock);
+			}
+			else if (sideChanged)
+				_carryMove = false;
+
+			_lastBoatSide = _session.BoatSide;
+
 			_boat.MoveTo(boatPosition, instant);
 
 			// 船夫：固定在船尾侧（原版 heroOffsetX = -26），脚沉到甲板线下方 18px
 			_boat.MoveHeroTo(_anchor.ToWorld(boatX + FerryDefine.HeroOffsetX, deckY + FerryDefine.HeroSinkY));
+			_lastBoatX = _boat.Go.transform.position.x;
 
-			// 船夫朝向
-			if (_boat.HeroRenderer != null)
-				_boat.HeroRenderer.flipX = _session.BoatSide > 0;
-
-			// 码头上的棋子：站位表只算一次，离开的动物不会让其他人挪位置
+			// 码头上的棋子：站位表只算一次，离开的动物不会让其他人挪位置。
+			// 原版首次 Refresh 会连空码头一起建表（中间码头的左右半区要在船出发前就定下来），
+			// 这里不能因为码头没人就跳过 Ensure。
 			for (int d = 0; d < _session.Docks.Count; d++)
 			{
 				List<FerryPiece> onDock = _session.PiecesOn(d);
+				_dockSlots.Ensure(d, onDock.Count);
 				if (onDock.Count == 0)
 					continue;
 
-				_dockSlots.Ensure(d, onDock.Count);
 				FerryDockLayout layout = GetLayout(d);
 				bool twoRiver = _dockSlots.IsTwoRiverDock(d);
 
@@ -397,7 +432,8 @@ namespace Hotfix
 
 					// 中间码头的站位表按「本码头第几只」排，其余码头用进关时分配的固定槽位
 					int slot = twoRiver ? i : _dockSlots.SlotOf(piece, i);
-					float x = _dockSlots.SlotX(d, slot);
+					// 原版 PieceView.Offset = (renderOffsetX, -renderOffsetY)，码头与船上都要加横向偏移
+					float x = _dockSlots.SlotX(d, slot) + piece.Dto.OffsetX;
 					float y = layout.DeckY + piece.Dto.OffsetY;
 					view.MoveTo(_anchor.ToWorld(x, y), instant);
 				}
@@ -410,7 +446,7 @@ namespace Hotfix
 				if (view == null)
 					continue;
 
-				float x = BoatRiderX(boatX, i, _session.Boat.Count);
+				float x = BoatRiderX(boatX, i, _session.Boat.Count) + _session.Boat[i].Dto.OffsetX;
 				float y = deckY + _session.Boat[i].Dto.OffsetY;
 				view.MoveTo(_anchor.ToWorld(x, y), instant);
 			}
@@ -453,6 +489,19 @@ namespace Hotfix
 			return boatX + (index - (count - 1) * 0.5f) * FerryDefine.BoatRiderStep + shift;
 		}
 
+		/// <summary>
+		/// 岸上搬船：船夫沿码头甲板从旧侧岸沿走到新侧岸沿（原版 DockEdgeWorldX 取 0.88 半宽）。
+		/// 本工程 Sprite 用底边 pivot，直接把脚放在甲板线上即可；原版中心 pivot 才需要另做补偿。
+		/// </summary>
+		private void SetupCarryPath(FerryDockLayout dock)
+		{
+			float half = dock.HalfWidth > 0f ? dock.HalfWidth : 96f;
+			float edge = half * FerryDefine.DockEdgeRatio;
+			float fromX = dock.CenterX + _lastBoatSide * edge;
+			float toX = dock.CenterX + _session.BoatSide * edge;
+			_boat.BeginCarry(_anchor.ToWorld(fromX, dock.DeckY), _anchor.ToWorld(toX, dock.DeckY));
+		}
+
 		private void UpdateAnims()
 		{
 			for (int i = 0; i < _pieceViews.Count; i++)
@@ -473,17 +522,44 @@ namespace Hotfix
 				view.Play(animName, frames, fps);
 			}
 
-			// 船夫：船在动就播行走
-			bool sailing = _boat.IsMoving;
+			UpdateBoatAnims();
+		}
+
+		/// <summary>
+		/// 船夫动作切换：只有岸上搬船才换成 hero.walk.default 的 Carrier（帧里自带船），
+		/// 河里移动和停稳都播 hero.man.default 的划桨循环，且不改动船夫朝向。
+		/// 本工程切帧 Sprite 都是底边 pivot，不同帧高的动作脚底天然对齐，
+		/// 因此不需要原版 SetHeroAnim 里那套 offsetY 基线补偿。
+		/// </summary>
+		private void UpdateBoatAnims()
+		{
 			FerryHeroData hero = FerryConfigService.Instance.Board != null ? FerryConfigService.Instance.Board.hero : null;
-			if (hero != null)
+			if (hero == null || _boat == null)
+				return;
+
+			bool moving = _boat.IsMoving;
+			if (moving == false)
+				_carryMove = false;
+
+			bool carrying = _carryMove && moving;
+			_boat.SetCarrying(carrying);
+
+			if (carrying)
 			{
-				List<FerryAnimData> list = sailing && hero.walk.Count > 0 ? hero.walk : hero.man;
-				string sheet = sailing && hero.walk.Count > 0 ? "walk" : "man";
-				FerryAnimData anim = list.Count > 0 ? list[0] : null;
-				float fps = (anim != null ? anim.Fps : 16f) * FerryDefine.HeroAnimSpeed;
-				_boat.PlayHero(anim != null ? anim.name : "man", BuildFrames(sheet, anim), fps);
+				FerryAnimData walk = FerryConfigService.FindAnim(hero.walk, FerryDefine.AnimIdle);
+				if (walk == null && hero.walk.Count > 0)
+					walk = hero.walk[0];
+				_boat.PlayCarrier(walk != null ? walk.name : "walk", BuildFrames("walk", walk),
+					(walk != null ? walk.Fps : FerryDefine.DefaultFps) * FerryDefine.HeroAnimSpeed);
+				return;
 			}
+
+			FerryAnimData anim = FerryConfigService.FindAnim(hero.man, FerryDefine.AnimIdle);
+			if (anim == null && hero.man.Count > 0)
+				anim = hero.man[0];
+
+			_boat.PlayHero(anim != null ? anim.name : "man", BuildFrames("man", anim),
+				(anim != null ? anim.Fps : FerryDefine.DefaultFps) * FerryDefine.HeroAnimSpeed);
 		}
 
 		/// <summary>
@@ -599,6 +675,7 @@ namespace Hotfix
 				_pieceViews[i].Tick(deltaTime);
 
 			_boat.Tick(deltaTime);
+			FollowBoatRiders();
 
 			for (int i = 0; i < _sceneAnims.Count; i++)
 				_sceneAnims[i].Tick(deltaTime);
@@ -611,6 +688,34 @@ namespace Hotfix
 
 			UpdateAnims();
 			HandleInput();
+		}
+
+		/// <summary>
+		/// 船横移时，船上乘客与船夫要跟着船一起动（原版 LayoutBoatRiders 每帧按船当前 X 重排）。
+		/// 用本帧船的位移去平移，避免插值期间人先瞬移到终点、船才慢慢划过去。
+		/// </summary>
+		private void FollowBoatRiders()
+		{
+			if (_boat == null || _session == null)
+				return;
+
+			float x = _boat.Go.transform.position.x;
+			float dx = x - _lastBoatX;
+			_lastBoatX = x;
+			if (Mathf.Abs(dx) < 0.001f)
+				return;
+
+			int count = _session.Boat.Count;
+			for (int i = 0; i < count; i++)
+			{
+				FerryPieceView view = FindView(_session.Boat[i]);
+				if (view == null)
+					continue;
+
+				float riderX = BoatRiderX(x, i, count) + _session.Boat[i].Dto.OffsetX;
+				view.SetBoatRiderX(riderX);
+			}
+			_boat.SetHeroX(x + FerryDefine.HeroOffsetX);
 		}
 
 		private void HandleInput()

@@ -81,6 +81,21 @@ namespace Hotfix
 			Go.transform.position = position;
 		}
 
+		/// <summary>
+		/// 渡河途中按船的当前 X 把乘客钉在船上的槽位（原版每帧 LayoutBoatRiders）。
+		/// 同时取消尚未走完的上船插值，避免「自身走路」和「船横移」叠加成双倍位移。
+		/// </summary>
+		public void SetBoatRiderX(float x)
+		{
+			Vector3 p = Go.transform.position;
+			p.x = x;
+			Go.transform.position = p;
+			_from.x = x;
+			_target.x = x;
+			_duration = 0f;
+			_elapsed = 0f;
+		}
+
 		public void MoveTo(Vector3 position, bool instant = false)
 		{
 			_target = position;

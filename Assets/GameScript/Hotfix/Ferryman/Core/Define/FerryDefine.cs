@@ -43,6 +43,9 @@ namespace Hotfix
 		public const string AnimEat = "eat";
 		public const string AnimSelect = "select";
 
+		/// <summary>岸上搬船时船夫能走到码头岸沿的位置比例（1 = 码头贴图边缘）</summary>
+		public const float DockEdgeRatio = 0.88f;
+
 		/// <summary>资源路径（YooAsset 地址 = 资源全路径，不带扩展名）</summary>
 		public const string BoardDataLocation = "Assets/GameRes/Ferryman/Data/board";
 		public const string EntityLocationRoot = "Assets/GameRes/Ferryman/Entity/";
