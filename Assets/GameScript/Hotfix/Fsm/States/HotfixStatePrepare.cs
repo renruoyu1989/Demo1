@@ -28,7 +28,7 @@ namespace Hotfix
 
 				if (UIManager.Instance.IsLoadingWindow() == false)
 				{
-					HotfixFsmManager.Instance.ChangeState(EHotfixStateType.Notice);
+					HotfixFsmManager.Instance.ChangeState(EHotfixStateType.Menu);
 				}
 			}
 		}

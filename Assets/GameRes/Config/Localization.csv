@@ -1,16 +1,63 @@
 Key,ChineseSimplified,ChineseTraditional,English
-UILogin1,进入游戏,進入遊戲,Enter Game
-UILogin2,账号,帳號,Account
-UILogin3,密码,密碼,Password
-UISetting1,设置,設定,Settings
-UISetting2,音量,音量,Volume
-UISetting3,开关,開關,Toggle
-UISetting4,音乐,音樂,Music
-UISetting5,音效,音效,Sound Effect
-UISetting6,语言,語言,Language
 UICommon1,确定,確定,OK
 UICommon2,取消,取消,Cancel
 UICommon3,关闭,關閉,Close
 Language_ChineseSimplified,简体中文,簡體中文,Simplified Chinese
 Language_ChineseTraditional,繁体中文,繁體中文,Traditional Chinese
 Language_English,英文,英文,English
+Ferry_Classic,经典模式,經典模式,Classic
+Ferry_Combo,连击模式,連擊模式,Combo
+Ferry_Options,设置,設定,Options
+Ferry_Help,玩法说明,玩法說明,How To Play
+Ferry_Rules,谜题规则,謎題規則,Puzzle Rules
+Ferry_Retry,重试,重試,Retry
+Ferry_Next,继续,繼續,Next
+Ferry_Select,选择关卡,選擇關卡,Select Level
+Ferry_Menu,关卡列表,關卡列表,Levels
+Ferry_Back,返回,返回,Back
+Ferry_Close,关闭,關閉,Close
+Ferry_Hint,提示,提示,HINT
+Ferry_Dismiss,遣散,遣散,DISMISS
+Ferry_Boat,船,船,BOAT
+Ferry_Dock,码头,碼頭,DOCK
+Ferry_Queue,队列,佇列,QUEUE
+Ferry_FerryIn,距补员,距補員,NEXT IN
+Ferry_Score,得分,得分,SCORE
+Ferry_Moves,渡河,渡河,MOVES
+Ferry_Time,用时,用時,TIME
+Ferry_Best,最高分,最高分,BEST
+Ferry_Total,总分,總分,TOTAL
+Ferry_Win,过关,過關,LEVEL COMPLETE
+Ferry_Lose,失败,失敗,LEVEL FAILED
+Ferry_OperationTip,点击动物上船 · 点击船上动物下船 · 按箭头渡河,點擊動物上船 · 點擊船上動物下船 · 按箭頭渡河,Click an animal to board · click it on the boat to unload · use the arrows to row
+Ferry_HintBoard,先点击码头上的一只动物上船,先點擊碼頭上的一隻動物上船,Click an animal on the dock to board it
+Ferry_HintRow,按右箭头把船划到对岸,按右箭頭把船划到對岸,Press the right arrow to row across
+Ferry_HintUnload,点击船上的动物让它下船,點擊船上的動物讓它下船,Click an animal on the boat to unload it
+Ferry_HintDismiss,凑够数量了，点击遣散叠加连击,湊夠數量了，點擊遣散疊加連擊,Enough animals ferried — dismiss them for a combo
+Ferry_HintRestart,本关已结束，可以重试,本關已結束，可以重試,This level is over — retry to play again
+Ferry_Music,音乐,音樂,MUSIC
+Ferry_Sfx,音效,音效,SFX
+Ferry_On,开,開,ON
+Ferry_Off,关,關,OFF
+Ferry_Quit,退出,退出,QUIT
+Ferry_TutorialNext,点击任意处继续,點擊任意處繼續,Click anywhere to continue
+Ferry_Locked,未解锁,未解鎖,LOCKED
+Ferry_Cleared,已通关,已通關,CLEARED
+Ferry_ComboMode,连击模式,連擊模式,COMBO MODE
+Ferry_HighScore,新纪录,新紀錄,NEW RECORD
+Ferry_RulesTitle,本关规则,本關規則,LEVEL RULES
+Ferry_Prey,会吃,會吃,EATS
+Ferry_Guard,会阻止,會阻止,GUARDS
+Ferry_Essential,关键单位,關鍵單位,ESSENTIAL
+Ferry_ResultDetail,抵达 {0} 只 · 连击 ×{1} · 用时 {2},抵達 {0} 隻 · 連擊 ×{1} · 用時 {2},{0} delivered · combo ×{1} · time {2}
+Ferry_Start,开始,開始,START
+Ferry_RulesIntro,点码头上动物上船 · 按箭头渡河 · 点船上动物下船。船一离岸，留在码头上的动物就会按下面的规则互相吃；关键单位被吃即失败。,點碼頭上動物上船 · 按箭頭渡河 · 點船上動物下船。船一離岸，留在碼頭上的動物就會按下面的規則互相吃；關鍵單位被吃即失敗。,Board an animal · row across · unload it. The moment the boat leaves the dock the animals left behind may eat each other. Losing an essential animal fails the level.
+Ferry_RulesScoring,计分：只有抵达终点码头的单位才计分；每个单位 = 50 × 该码头同名单位数。同名越多分越高。,計分：只有抵達終點碼頭的單位才計分；每個單位 = 50 × 該碼頭同名單位數。同名越多分越高。,Scoring: only animals at the far dock count. Each is worth 50 × the number of its kind on that dock.
+Ferry_HelpStep1,1. 点击码头上的动物或物件让它上船。,1. 點擊碼頭上的動物或物件讓它上船。,1. Click an animal or object on the dock to load it onto the ferry.
+Ferry_HelpStep2,2. 点击底部左右箭头把船划到相邻码头；船容量见 BOAT 圆点。,2. 點擊底部左右箭頭把船划到相鄰碼頭；船容量見 BOAT 圓點。,2. Use the bottom arrows to row to the next dock. The BOAT dots show remaining capacity.
+Ferry_HelpStep3,3. 点击船上的动物让它下船。先运谁要想清楚：船一离岸留岸的动物就会互相吃。,3. 點擊船上的動物讓它下船。先運誰要想清楚：船一離岸留岸的動物就會互相吃。,3. Click an animal on the boat to unload it. Choose carefully — animals left alone will eat each other.
+Ferry_HelpStep4,4. 关键单位（标 ★）被吃立即失败；所有存活单位抵达终点码头即过关。,4. 關鍵單位（標 ★）被吃立即失敗；所有存活單位抵達終點碼頭即過關。,4. Losing an essential animal (★) fails the level. Deliver every survivor to the far dock to win.
+Ferry_HelpStep5,5. 快捷键：← → 或 A D 划船 · R 重试 · H 提示 · Esc 返回关卡列表。,5. 快捷鍵：← → 或 A D 划船 · R 重試 · H 提示 · Esc 返回關卡列表。,5. Shortcuts: ← → or A D to row · R retry · H hint · Esc back to level select.
+Ferry_HelpCombo,连击模式：每若干次渡河会有新动物加入等待队列；把同族动物凑够数量后点击 DISMISS 遣散，可以叠加连击倍率拿高分。,連擊模式：每若干次渡河會有新動物加入等待佇列；把同族動物湊夠數量後點擊 DISMISS 遣散，可以疊加連擊倍率拿高分。,COMBO MODE: new animals join the waiting queue every few crossings. Deliver enough of a kind and press DISMISS to cash in a combo multiplier.
+Ferry_Language,语言,語言,LANGUAGE
+Ferry_Volume,音量,音量,VOLUME

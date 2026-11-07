@@ -4,8 +4,13 @@ namespace Hotfix
 	public enum EWindowType
 	{
 		UILoading,
-		UILogin,
-		UIMain,
-		UISetting,
+		UIMenu,
+		UISelect,
+		UIHud,
+		UIResult,
+		UIRules,
+		UIHelp,
+		UIOptions,
+		UITutorial,
 	}
 }

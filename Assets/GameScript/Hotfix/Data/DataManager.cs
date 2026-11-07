@@ -54,8 +54,7 @@ namespace Hotfix
 		{
 			// 显式注册所有数据类
 			// 注意：不要用枚举名反射创建，那样类名/命名空间任何一处改动都会变成运行时异常
-			_allDatas.Add(new DataLogin());
-			_allDatas.Add(new DataPlayer());
+			_allDatas.Add(new DataFerryProfile());
 
 			// 先载入存档，再初始化数据类
 			LoadAll();

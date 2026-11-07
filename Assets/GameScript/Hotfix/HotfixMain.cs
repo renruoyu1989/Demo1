@@ -35,18 +35,21 @@ namespace Hotfix
 
 			// 初始化状态机管理器
 			var prepare = new HotfixStatePrepare(EHotfixStateType.Prepare);
-			var notice = new HotfixStateNotice(EHotfixStateType.Notice);
-			var login = new HotfixStateLogin(EHotfixStateType.Login);
-			var town = new HotfixStateTown(EHotfixStateType.Town);
+			var menu = new HotfixStateMenu(EHotfixStateType.Menu);
+			var select = new HotfixStateSelect(EHotfixStateType.Select);
+			var playing = new HotfixStatePlaying(EHotfixStateType.Playing);
 			HotfixFsmManager.Instance.AddState(prepare);
-			HotfixFsmManager.Instance.AddState(notice);
-			HotfixFsmManager.Instance.AddState(login);
-			HotfixFsmManager.Instance.AddState(town);
+			HotfixFsmManager.Instance.AddState(menu);
+			HotfixFsmManager.Instance.AddState(select);
+			HotfixFsmManager.Instance.AddState(playing);
 			HotfixFsmManager.Instance.Run(EHotfixStateType.Prepare);
 		}
 
 		public void Update()
 		{
+			// 先消费 UI 发起的挂起状态切换，避免在 UI 回调里同步 Exit/Enter
+			FerryGameCommands.ProcessPendingState();
+
 			HotfixFsmManager.Instance.Update();
 			DataManager.Instance.Update();
 			UIManager.Instance.Update();
