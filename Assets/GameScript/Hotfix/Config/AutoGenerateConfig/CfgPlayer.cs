@@ -8,7 +8,8 @@ namespace Hotfix
 {
 	public class CfgPlayerTab : ConfigTab
 	{
-		public string Name { protected set; get; }
+		public string Name { get { return LANG.Convert(NameID); } }
+		public int NameID { protected set; get; }
 		public int AvatarID { protected set; get; }
 		public float BodyRadius { protected set; get; }
 		public float MoveSpeed { protected set; get; }
@@ -18,10 +19,10 @@ namespace Hotfix
 		public double Damage { protected set; get; }
 		public double Armor { protected set; get; }
 
-		public CfgPlayerTab(int id, string name, int avatarID, float bodyRadius, float moveSpeed, string skills, double hp, double mp, double damage, double armor)
+		public CfgPlayerTab(int id, int nameID, int avatarID, float bodyRadius, float moveSpeed, string skills, double hp, double mp, double damage, double armor)
 		{
 			Id = id;
-			Name = name;
+			NameID = nameID;
 			AvatarID = avatarID;
 			BodyRadius = bodyRadius;
 			MoveSpeed = moveSpeed;
@@ -52,7 +53,7 @@ namespace Hotfix
 		}
 		public void Create()
 		{
-			AddElement(1, new CfgPlayerTab(1, LANG.Convert(91216312), 1001, 1.2f, 4f, "10001", 100, 100, 20, 10));
+			AddElement(1, new CfgPlayerTab(1, 91216312, 1001, 1.2f, 4f, "10001", 100, 100, 20, 10));
 		}
 	}
 }

@@ -28,6 +28,11 @@ public class LanguageWrapper
 	/// 繁体内容
 	/// </summary>
 	public string Content_CT = string.Empty;
+
+	/// <summary>
+	/// 英文内容
+	/// </summary>
+	public string Content_EN = string.Empty;
 }
 
 
@@ -92,6 +97,12 @@ public class LanguageMgr
                     {
                         _cacheLanguage[hashCode].Content_CT = oldContent.Content_CT;
                     }
+
+					// 总表里已手工翻译的英文需要保留，避免每次导出被覆盖
+					if (!string.IsNullOrEmpty(oldContent.Content_EN))
+					{
+						_cacheLanguage[hashCode].Content_EN = oldContent.Content_EN;
+					}
                 }
 			}
 		
@@ -142,12 +153,13 @@ public class LanguageMgr
 		// 遍历所有行
 		foreach (var table in sheet.Tables)
 		{
-			// 获取格子数值（允许旧版表格缺少 lang_ct 列）
+			// 获取格子数值（允许旧版表格缺少 lang_ct / lang_en 列）
 			int firsetCellNum = table.Row.FirstCellNum;
 			string cell1Value = table.GetCellValueOrDefault(firsetCellNum); //id
 			string cell2Value = table.GetCellValueOrDefault(++firsetCellNum); //source
 			string cell3Value = table.GetCellValueOrDefault(++firsetCellNum); //language
 			string cell4Value = table.GetCellValueOrDefault(++firsetCellNum); //language_ct
+			string cell5Value = table.GetCellValueOrDefault(++firsetCellNum); //language_en
 
 			// 跳过空行
 			if (string.IsNullOrEmpty(cell1Value))
@@ -158,6 +170,7 @@ public class LanguageMgr
 			wrapper.Source = cell2Value;
 			wrapper.Content = cell3Value;
 			wrapper.Content_CT = cell4Value;
+			wrapper.Content_EN = cell5Value;
 
 			if (cacheLanguages.ContainsKey(hashCode) == false)
 				cacheLanguages.Add(hashCode, wrapper);
@@ -185,9 +198,9 @@ public class LanguageMgr
 		{
 			int nextRow = 0;
 
-			List<string> typeList = new List<string>() { "int", "#", "string", "string" };
-			List<string> nameList = new List<string>() { "id", "#", "lang", "lang_ct"};
-			List<string> flagList = new List<string>() { "C", "#", "C", "C" };
+			List<string> typeList = new List<string>() { "int", "#", "string", "string", "string" };
+			List<string> nameList = new List<string>() { "id", "#", "lang", "lang_ct", "lang_en" };
+			List<string> flagList = new List<string>() { "C", "#", "C", "C", "C" };
 
 			// 创建工作簿
 			XSSFWorkbook workbook = new XSSFWorkbook();
@@ -253,6 +266,11 @@ public class LanguageMgr
                 ICell cell4 = row.CreateCell(++cellNum);
                 cell4.SetCellValue(wrapper.Content_CT);
                 cell4.CellStyle = style;
+
+                // language_en
+                ICell cell5 = row.CreateCell(++cellNum);
+                cell5.SetCellValue(wrapper.Content_EN);
+                cell5.CellStyle = style;
             }
 
 			// 设置格式
@@ -260,6 +278,7 @@ public class LanguageMgr
 			sheet.SetColumnWidth(1, 30 * 256); //设置列宽为30个字符
 			sheet.SetColumnWidth(2, 30 * 256); //设置列宽为30个字符
             sheet.SetColumnWidth(3, 30 * 256); //设置列宽为30个字符
+            sheet.SetColumnWidth(4, 30 * 256); //设置列宽为30个字符
 
             // 保存Excel文件
             string filePath = Path.Combine(ExportConfig.Instance.ExcelPath, StrAutoGenerateLanguageExcelName + ".xlsx");

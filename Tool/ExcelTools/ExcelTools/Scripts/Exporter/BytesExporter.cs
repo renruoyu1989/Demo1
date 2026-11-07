@@ -67,19 +67,27 @@ public class BytesExporter : BaseExporter
 
 				if (_sheet.FileName == "AutoGenerateLanguage")
 				{
-                    if (head.Name == "lang")
-                    {
-                        cs = value;
-                    }
-                    else if (head.Name == "lang_ct")
-                    {
-                        // 已手工配置繁体则优先使用，未配置（空）才用 OpenCC 自动转译
-                        if (string.IsNullOrEmpty(value) && !string.IsNullOrEmpty(cs))
-                        {
-                            value = chineseConverter.ToTaiwanFromSimplified(cs);
-                        }
-                    }
-                }
+				    if (head.Name == "lang")
+				    {
+				        cs = value;
+				    }
+				    else if (head.Name == "lang_ct")
+				    {
+				        // 已手工配置繁体则优先使用，未配置（空）才用 OpenCC 自动转译
+				        if (string.IsNullOrEmpty(value) && !string.IsNullOrEmpty(cs))
+				        {
+				            value = chineseConverter.ToTaiwanFromSimplified(cs);
+				        }
+				    }
+				    else if (head.Name == "lang_en")
+				    {
+				        // 英文无法自动翻译，未配置时回退简体
+				        if (string.IsNullOrEmpty(value) && !string.IsNullOrEmpty(cs))
+				        {
+				            value = cs;
+				        }
+				    }
+				}
 
 				WriteCell(tableBuffer, head, value, createLogo, chineseConverter);
 			}

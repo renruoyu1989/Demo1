@@ -8,7 +8,8 @@ namespace Hotfix
 {
 	public class CfgSkillTab : ConfigTab
 	{
-		public string Name { protected set; get; }
+		public string Name { get { return LANG.Convert(NameID); } }
+		public int NameID { protected set; get; }
 		public int AnimationID { protected set; get; }
 		public string Sound { protected set; get; }
 		public float Life { protected set; get; }
@@ -18,10 +19,10 @@ namespace Hotfix
 		public float Percent { protected set; get; }
 		public float Range { protected set; get; }
 
-		public CfgSkillTab(int id, string name, int animationID, string sound, float life, float cd, int mp, float delay, float percent, float range)
+		public CfgSkillTab(int id, int nameID, int animationID, string sound, float life, float cd, int mp, float delay, float percent, float range)
 		{
 			Id = id;
-			Name = name;
+			NameID = nameID;
 			AnimationID = animationID;
 			Sound = sound;
 			Life = life;
@@ -52,9 +53,9 @@ namespace Hotfix
 		}
 		public void Create()
 		{
-			AddElement(1001, new CfgSkillTab(1001, LANG.Convert(88134997), 1002, "", 0.9f, 1f, 0, 0.2f, 100f, 1.5f));
-			AddElement(1002, new CfgSkillTab(1002, LANG.Convert(1351039565), 1005, "", 1.2f, 1f, 0, 0.8f, 50f, 3f));
-			AddElement(1003, new CfgSkillTab(1003, LANG.Convert(-1257327582), 1004, "", 1f, 5f, 0, 0f, 0f, 0f));
+			AddElement(1001, new CfgSkillTab(1001, 88134997, 1002, "", 0.9f, 1f, 0, 0.2f, 100f, 1.5f));
+			AddElement(1002, new CfgSkillTab(1002, 1351039565, 1005, "", 1.2f, 1f, 0, 0.8f, 50f, 3f));
+			AddElement(1003, new CfgSkillTab(1003, -1257327582, 1004, "", 1f, 5f, 0, 0f, 0f, 0f));
 		}
 	}
 }

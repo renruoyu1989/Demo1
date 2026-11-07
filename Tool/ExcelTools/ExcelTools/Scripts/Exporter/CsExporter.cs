@@ -114,7 +114,16 @@ public class CsExporter : BaseExporter
 			}
 			else if (head.Type == "language")
 			{
-				sw.WriteLine(tChar + $"public string " + headName + protectedChar);
+				// 客户端：保存多语言ID，读取属性时再按当前语言转换（支持运行时切语言）
+				if (createLogo == "C")
+				{
+					sw.WriteLine(tChar + $"public string " + headName + " { get { return LANG.Convert(" + headName + "ID); } }");
+					sw.WriteLine(tChar + $"public int " + headName + "ID" + protectedChar);
+				}
+				else
+				{
+					sw.WriteLine(tChar + $"public string " + headName + protectedChar);
+				}
 			}
 			else if (head.Type == "List<language>")
 			{
@@ -223,7 +232,7 @@ public class CsExporter : BaseExporter
 				if (createLogo.ToLower() == "s")
                     sw.WriteLine(tTwoChar + $"{headName} = byteBuf.ReadUTF();");
 				else
-                    sw.WriteLine(tTwoChar + $"{headName} = LANG.Convert(byteBuf.ReadInt());");
+                    sw.WriteLine(tTwoChar + $"{headName}ID = byteBuf.ReadInt();");
 			}
 			else if (head.Type == "List<language>")
 			{
