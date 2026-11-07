@@ -6,8 +6,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using DG.Tweening;
 using UnityEngine;
-using MotionFramework.Resource;
 using MotionFramework.Console;
 
 namespace MotionFramework.Audio
@@ -42,6 +42,14 @@ namespace MotionFramework.Audio
 		private readonly Dictionary<EAudioLayer, AudioSourceWrapper> _audioSourceWrappers = new Dictionary<EAudioLayer, AudioSourceWrapper>(200);
 		private GameObject _root;
 
+		private Tweener musicTweener;
+
+		/// <summary>
+		/// 音频资源根目录
+		/// 注意：YooAsset 未启用可寻址（Addressable）时，资源定位地址就是资源全路径
+		/// </summary>
+		private const string BaseLocation = "Assets/GameRes";
+
 
 		void IModule.OnCreate(System.Object param)
 		{
@@ -54,6 +62,7 @@ namespace MotionFramework.Audio
 				_audioSourceWrappers.Add(layer, new AudioSourceWrapper(layer.ToString(), _root.transform));
 			}
 		}
+
 		void IModule.OnUpdate()
 		{
 		}
@@ -77,12 +86,12 @@ namespace MotionFramework.Audio
 		{
 			if (_assets.ContainsKey(location) == false)
 			{
-				AssetAudio asset = new AssetAudio(location, audioLayer);
+				AssetAudio asset = new AssetAudio($"{BaseLocation}/{location}", audioLayer);
 				_assets.Add(location, asset);
 				asset.Load(null);
 			}
 		}
-		
+
 		/// <summary>
 		/// 释放所有音频资源
 		/// </summary>
@@ -125,7 +134,6 @@ namespace MotionFramework.Audio
 		{
 			if (string.IsNullOrEmpty(location))
 				return;
-
 			PlayAudioClip(EAudioLayer.Music, location, loop);
 		}
 
@@ -197,7 +205,7 @@ namespace MotionFramework.Audio
 			else
 			{
 				// 新建加载资源
-				AssetAudio assetAudio = new AssetAudio(location, EAudioLayer.Sound);
+				AssetAudio assetAudio = new AssetAudio($"{BaseLocation}/{location}", EAudioLayer.Sound);
 				_assets.Add(location, assetAudio);
 				assetAudio.Load((AudioClip clip) =>
 				{
@@ -210,12 +218,29 @@ namespace MotionFramework.Audio
 			}
 		}
 
+		public void PauseMusic(bool pause)
+		{
+			if (pause)
+			{
+				_audioSourceWrappers[EAudioLayer.Music].Source.Pause();
+			}
+			else
+			{
+				_audioSourceWrappers[EAudioLayer.Music].Source.UnPause();
+			}
+		}
+
 		/// <summary>
 		/// 暂停播放
 		/// </summary>
 		public void Stop(EAudioLayer layer)
 		{
 			_audioSourceWrappers[layer].Source.Stop();
+		}
+
+		public void StopMusic()
+		{
+			Stop(EAudioLayer.Music);
 		}
 
 		/// <summary>
@@ -283,7 +308,7 @@ namespace MotionFramework.Audio
 			else
 			{
 				// 新建加载资源
-				AssetAudio assetAudio = new AssetAudio(location, layer);
+				AssetAudio assetAudio = new AssetAudio($"{BaseLocation}/{location}", layer);
 				_assets.Add(location, assetAudio);
 				assetAudio.Load((AudioClip clip) =>
 				{

@@ -1,0 +1,21 @@
+{
+    "name": "Script.Editor",
+    "references": [
+        "Script",
+        "Script.ThirdParty",
+        "MotionFramework",
+        "MotionFramework.Editor",
+        "YooAsset",
+        "YooAsset.Editor"
+    ],
+    "optionalUnityReferences": [],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": []
+}

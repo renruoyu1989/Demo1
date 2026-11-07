@@ -68,7 +68,7 @@ namespace MotionFramework.Utility
             if (bit < 0 || bit > 31)
 				throw new ArgumentOutOfRangeException();
 			else
-				return (_mask & (1 << bit)) == 0 ? false : true;
+				return (_mask & (1 << bit)) != 0;
         }
     }
 }

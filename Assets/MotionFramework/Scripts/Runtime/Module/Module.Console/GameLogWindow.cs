@@ -40,7 +40,7 @@ namespace MotionFramework.Console
 		private bool _showError = true;
 		private Vector2 _scrollPos = Vector2.zero;
 		
-		void IConsoleWindow.OnStart()
+		public GameLogWindow()
 		{
 			// 注册UnityEngine日志系统
 			Application.logMessageReceived += HandleUnityEngineLog;
@@ -53,7 +53,8 @@ namespace MotionFramework.Console
 			_showError = ConsoleGUI.Toggle("Error", _showError);
 			GUILayout.EndHorizontal();
 
-			_scrollPos = ConsoleGUI.BeginScrollView(_scrollPos, 40);
+			float offset = ConsoleGUI.ToolbarStyle.fixedHeight;
+			_scrollPos = ConsoleGUI.BeginScrollView(_scrollPos, offset);
 			for (int i = 0; i < _logs.Count; i++)
 			{
 				LogWrapper wrapper = _logs[i];
@@ -80,7 +81,12 @@ namespace MotionFramework.Console
 		{
 			LogWrapper wrapper = ReferencePool.Spawn<LogWrapper>();
 			wrapper.Type = type;
-			wrapper.Log = logString;
+			
+			if (type == LogType.Assert || type == LogType.Error || type == LogType.Exception)
+				wrapper.Log = logString + "\n" + stackTrace;
+			else
+				wrapper.Log = logString;
+
 			_logs.Add(wrapper);
 
 			if (_logs.Count > LOG_MAX_COUNT)

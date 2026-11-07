@@ -15,6 +15,11 @@ namespace MotionFramework.Console
 	{
 		private static bool _initGlobalStyle = false;
 
+		public static GUIStyle HorizontalScrollbarStyle { private set; get; }
+		public static GUIStyle HorizontalScrollbarThumbStyle { private set; get; }
+		public static GUIStyle VerticalScrollbarStyle { private set; get; }
+		public static GUIStyle VerticalScrollbarThumbStyle { private set; get; }
+		public static GUIStyle XStyle { private set; get; }
 		public static GUIStyle ToolbarStyle { private set; get; }
 		public static GUIStyle ButtonStyle { private set; get; }
 		public static GUIStyle ToogleStyle1 { private set; get; }
@@ -24,8 +29,12 @@ namespace MotionFramework.Console
 		public static GUIStyle RichLabelStyle { private set; get; }
 		public static int RichLabelFontSize { private set; get; }
 
+		private static GUIStyle _cachedHorizontalScrollbarThumb;
+		private static GUIStyle _cachedVerticalScrollbarThumb;
+
 		/// <summary>
 		/// 创建一些高度和字体大小固定的控件样式
+		/// 控制台的标准分辨率为 : 1920X1080
 		/// </summary>
 		internal static void InitGlobalStyle()
 		{
@@ -33,44 +42,81 @@ namespace MotionFramework.Console
 			{
 				_initGlobalStyle = true;
 
+				float scale;
+				if (Screen.height > Screen.width)
+				{
+					// 竖屏Portrait
+					scale = Screen.width / 1080f;
+				}
+				else
+				{
+					// 横屏Landscape
+					scale = Screen.width / 1920f;
+				}
+
+				HorizontalScrollbarStyle = new GUIStyle(GUI.skin.horizontalScrollbar);
+				HorizontalScrollbarStyle.fixedHeight = (int)(30 * scale);
+				HorizontalScrollbarThumbStyle = new GUIStyle(GUI.skin.horizontalScrollbarThumb);
+				HorizontalScrollbarThumbStyle.fixedHeight = (int)(30 * scale);
+
+				VerticalScrollbarStyle = new GUIStyle(GUI.skin.verticalScrollbar);
+				VerticalScrollbarStyle.fixedWidth = (int)(30 * scale);
+				VerticalScrollbarThumbStyle = new GUIStyle(GUI.skin.verticalScrollbarThumb);
+				VerticalScrollbarThumbStyle.fixedWidth = (int)(30 * scale);
+
+				XStyle = new GUIStyle(GUI.skin.button);
+				XStyle.fontSize = (int)(38 * scale);
+				XStyle.fixedWidth = (int)(60 * scale);
+				XStyle.fixedHeight = (int)(60 * scale);
+
 				ToolbarStyle = new GUIStyle(GUI.skin.button);
-				ToolbarStyle.fontSize = 28;
-				ToolbarStyle.fixedHeight = 40;
+				ToolbarStyle.fontSize = (int)(28 * scale);
+				ToolbarStyle.fixedHeight = (int)(40 * scale);
 
 				ButtonStyle = new GUIStyle(GUI.skin.button);
-				ButtonStyle.fontSize = 28;
-				ButtonStyle.fixedHeight = 40;
+				ButtonStyle.fontSize = (int)(28 * scale);
+				ButtonStyle.fixedHeight = (int)(40 * scale);
 
 				ToogleStyle1 = new GUIStyle(GUI.skin.button);
-				ToogleStyle1.fontSize = 26;
-				ToogleStyle1.fixedHeight = 35;
+				ToogleStyle1.fontSize = (int)(26 * scale);
+				ToogleStyle1.fixedHeight = (int)(35 * scale);
 
 				ToogleStyle2 = new GUIStyle(GUI.skin.box);
-				ToogleStyle2.fontSize = 26;
-				ToogleStyle2.fixedHeight = 35;
+				ToogleStyle2.fontSize = (int)(26 * scale);
+				ToogleStyle2.fixedHeight = (int)(35 * scale);
 
 				TextFieldStyle = new GUIStyle(GUI.skin.textField);
-				TextFieldStyle.fontSize = 22;
-				TextFieldStyle.fixedHeight = 30;
+				TextFieldStyle.fontSize = (int)(22 * scale);
+				TextFieldStyle.fixedHeight = (int)(30 * scale);
 
 				LableStyle = new GUIStyle(GUI.skin.label);
-				LableStyle.fontSize = 24;
+				LableStyle.fontSize = (int)(24 * scale);
 
 				RichLabelStyle = GUIStyle.none;
 				RichLabelStyle.richText = true;
-				RichLabelFontSize = 24;
+				RichLabelFontSize = (int)(24 * scale);
 			}
 		}
 
-		public static Vector2 BeginScrollView(Vector2 pos, int fixedViewHeight)
+		public static Vector2 BeginScrollView(Vector2 pos, float offset = 0f)
 		{
-			float scrollWidth = Screen.width;
-			float scrollHeight = Screen.height - ButtonStyle.fixedHeight - fixedViewHeight - 10;
-			return GUILayout.BeginScrollView(pos, GUILayout.Width(scrollWidth), GUILayout.Height(scrollHeight));
+			// 设置滑动条皮肤
+			_cachedHorizontalScrollbarThumb = GUI.skin.horizontalScrollbarThumb;
+			_cachedVerticalScrollbarThumb = GUI.skin.verticalScrollbarThumb;
+			GUI.skin.horizontalScrollbarThumb = HorizontalScrollbarThumbStyle;
+			GUI.skin.verticalScrollbarThumb = VerticalScrollbarThumbStyle;
+
+			float scrollWidth = Screen.safeArea.width - VerticalScrollbarStyle.fixedWidth;
+			float scrollHeight = Screen.safeArea.height - ToolbarStyle.fixedHeight * 2 - offset;
+			return GUILayout.BeginScrollView(pos, HorizontalScrollbarStyle, VerticalScrollbarStyle, GUILayout.Width(scrollWidth), GUILayout.Height(scrollHeight));
 		}
 		public static void EndScrollView()
 		{
 			GUILayout.EndScrollView();
+
+			// 还原滑动条皮肤
+			GUI.skin.horizontalScrollbarThumb = _cachedHorizontalScrollbarThumb;
+			GUI.skin.verticalScrollbarThumb = _cachedVerticalScrollbarThumb;
 		}
 		public static bool Toggle(string name, bool checkFlag)
 		{

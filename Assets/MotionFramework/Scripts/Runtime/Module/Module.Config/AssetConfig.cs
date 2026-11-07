@@ -8,7 +8,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using MotionFramework.IO;
-using MotionFramework.Resource;
+using YooAsset;
 
 namespace MotionFramework.Config
 {
@@ -19,16 +19,16 @@ namespace MotionFramework.Config
 	{
 		public int Id { get; protected set; }
 		public abstract void ReadByte(ByteBuffer byteBuf);
+		public virtual void Assemble() { }
 	}
 
 	/// <summary>
 	/// 配表资源类
 	/// </summary>
-	public abstract class AssetConfig
+	public abstract class AssetConfig : IEnumerator
 	{
-		private AssetReference _assetRef;
-		private AssetOperationHandle _handle;
-		private System.Action<AssetConfig> _userCallback;
+		private AssetHandle _handle;
+		private bool _isLoadAsset = false;
 
 		/// <summary>
 		/// 配表数据集合
@@ -36,15 +36,9 @@ namespace MotionFramework.Config
 		protected readonly Dictionary<int, ConfigTable> _tables = new Dictionary<int, ConfigTable>();
 
 		/// <summary>
-		/// 是否完成
+		/// 准备完毕
 		/// </summary>
-		public bool IsDone
-		{
-			get
-			{
-				return _handle.IsDone;
-			}
-		}
+		public bool IsPrepare { private set; get; }
 
 		/// <summary>
 		/// 资源地址
@@ -52,24 +46,20 @@ namespace MotionFramework.Config
 		public string Location { private set; get; }
 
 
-		public void Init(string location)
+		/// <summary>
+		/// 加载表格
+		/// </summary>
+		public void Load(string location)
 		{
-			if (_assetRef != null)
+			if (_isLoadAsset)
 				return;
 
+			_isLoadAsset = true;
 			Location = location;
-			_assetRef = new AssetReference(location);
-		}
-		public void Load(System.Action<AssetConfig> callback)
-		{
-			if (_userCallback != null)
-				return;
-
-			_userCallback = callback;
-			_handle = _assetRef.LoadAssetAsync<TextAsset>();
+			_handle = YooAssets.LoadAssetAsync<TextAsset>(location);
 			_handle.Completed += Handle_Completed;
 		}
-		private void Handle_Completed(AssetOperationHandle obj)
+		private void Handle_Completed(AssetHandle obj)
 		{
 			try
 			{
@@ -82,16 +72,13 @@ namespace MotionFramework.Config
 			}
 			catch (Exception ex)
 			{
-				MotionLog.Log(ELogLevel.Error, $"Failed to parse config {Location}. Error : {ex.ToString()}");
+				MotionLog.Error($"Failed to parse config {Location}. Error : {ex.ToString()}");
 			}
 
 			// 注意：为了节省内存这里立即释放了资源
-			if (_assetRef != null)
-			{
-				_assetRef.Release();
-				_assetRef = null;
-			}
+			_handle.Release();
 
+			IsPrepare = true;
 			_userCallback?.Invoke(this);
 		}
 
@@ -145,6 +132,7 @@ namespace MotionFramework.Config
 				}
 				else
 				{
+					tab.Assemble();
 					_tables.Add(tab.Id, tab);
 				}
 			}
@@ -171,7 +159,7 @@ namespace MotionFramework.Config
 			}
 			else
 			{
-				MotionLog.Log(ELogLevel.Warning, $"Faild to get tab. File is {Location}, key is {key}");
+				MotionLog.Warning($"Faild to get table. File is {Location}, key is {key}");
 				return null;
 			}
 		}
@@ -197,12 +185,59 @@ namespace MotionFramework.Config
 		/// </summary>
 		public List<int> GetKeys()
 		{
-			List<int> keys = new List<int>();
+			List<int> keys = new List<int>(_tables.Count);
 			foreach (var tab in _tables)
 			{
 				keys.Add(tab.Key);
 			}
 			return keys;
 		}
+
+		/// <summary>
+		/// 获取所有Value
+		/// </summary>
+		public List<ConfigTable> GetValues()
+		{
+			List<ConfigTable> values = new List<ConfigTable>(_tables.Count);
+			foreach (var tab in _tables)
+			{
+				values.Add(tab.Value);
+			}
+			return values;
+		}
+
+		#region 异步相关
+		private System.Action<AssetConfig> _userCallback;
+
+		/// <summary>
+		/// 完成委托
+		/// </summary>
+		public event System.Action<AssetConfig> Completed
+		{
+			add
+			{
+				if (IsPrepare)
+					value.Invoke(this);
+				else
+					_userCallback += value;
+			}
+			remove
+			{
+				_userCallback -= value;
+			}
+		}
+
+		bool IEnumerator.MoveNext()
+		{
+			return !IsPrepare;
+		}
+		void IEnumerator.Reset()
+		{
+		}
+		object IEnumerator.Current
+		{
+			get { return null; }
+		}
+		#endregion
 	}
 }

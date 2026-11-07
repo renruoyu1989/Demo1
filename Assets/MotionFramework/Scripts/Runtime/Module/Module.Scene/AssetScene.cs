@@ -1,30 +1,23 @@
 ﻿//--------------------------------------------------
 // Motion Framework
-// Copyright©2018-2020 何冠峰
+// Copyright©2018-2021 何冠峰
 // Licensed under the MIT license
 //--------------------------------------------------
-using System.Collections;
-using UnityEngine;
-using MotionFramework.Resource;
+using UnityEngine.SceneManagement;
+using YooAsset;
 
 namespace MotionFramework.Scene
 {
 	internal class AssetScene
 	{
-		private AssetReference _assetRef;
-		private AssetOperationHandle _handle;
-		private System.Action<SceneInstance> _userCallback;
+		private SceneHandle _handle;
+		private System.Action<SceneHandle> _userCallback;
+		private bool _isLoadScene = false;
 
 		/// <summary>
 		/// 场景地址
 		/// </summary>
-		public string Location
-		{
-			get
-			{
-				return _assetRef.Location;
-			}
-		}
+		public string Location { private set; get; }
 
 		/// <summary>
 		/// 场景加载进度（0-100）
@@ -33,6 +26,8 @@ namespace MotionFramework.Scene
 		{
 			get
 			{
+				if (_handle == null)
+					return 0;
 				return (int)(_handle.Progress * 100f);
 			}
 		}
@@ -44,43 +39,45 @@ namespace MotionFramework.Scene
 		{
 			get
 			{
-				return Progress == 100;
+				if (_handle == null)
+					return false;
+				return _handle.IsDone;
 			}
 		}
 
 
 		public AssetScene(string location)
 		{
-			_assetRef = new AssetReference(location);
+			Location = location;
 		}
-		public void Load(bool isAdditive, bool activeOnLoad, System.Action<SceneInstance> callback)
+		public void Load(bool isAdditive, bool activeOnLoad, System.Action<SceneHandle> callback)
 		{
-			if (_userCallback != null)
+			if (_isLoadScene)
 				return;
 
-			// 场景加载参数
-			SceneInstanceParam param = new SceneInstanceParam();
-			param.IsAdditive = isAdditive;
-			param.ActivateOnLoad = activeOnLoad;
+			_isLoadScene = true;
+			_userCallback = callback;
+			MotionLog.Log($"Begin to load scene : {Location}");
 
-			_userCallback = callback;	
-			_handle = _assetRef.LoadAssetAsync<SceneInstance>(param);
+			LoadSceneMode sceneMode = isAdditive ? LoadSceneMode.Additive : LoadSceneMode.Single;
+			_handle = YooAssets.LoadSceneAsync(Location, sceneMode, LocalPhysicsMode.None, false);
 			_handle.Completed += Handle_Completed;
 		}
 		public void UnLoad()
 		{
-			if (_assetRef != null)
+			if (_isLoadScene)
 			{
-				_assetRef.Release();
-				_assetRef = null;
+				_isLoadScene = false;
+				_userCallback = null;
+				if (_handle != null)
+					_handle.UnloadAsync();
 			}
-			_userCallback = null;
 		}
 
 		// 资源回调
-		private void Handle_Completed(AssetOperationHandle obj)
+		private void Handle_Completed(SceneHandle obj)
 		{
-			_userCallback?.Invoke(_handle.AssetObject as SceneInstance);
+			_userCallback?.Invoke(_handle);
 		}
 	}
 }

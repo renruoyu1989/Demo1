@@ -7,7 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using MotionFramework.Pool;
-using MotionFramework.Resource;
+using YooAsset;
 
 namespace MotionFramework.Console
 {
@@ -17,19 +17,24 @@ namespace MotionFramework.Console
 		// GUI相关
 		private Vector2 _scrollPos = Vector2.zero;
 
-		void IConsoleWindow.OnStart()
-		{
-		}
 		void IConsoleWindow.OnGUI()
 		{
+			// 如果游戏模块没有创建
+			if (MotionEngine.Contains(typeof(GameObjectPoolManager)) == false)
+			{
+				ConsoleGUI.YellowLable($"{nameof(GameObjectPoolManager)} is not create.");
+				return;
+			}
+
 			var pools = GameObjectPoolManager.Instance.GetAllCollectors;
 			ConsoleGUI.Lable($"池总数：{pools.Count}");
 
-			_scrollPos = ConsoleGUI.BeginScrollView(_scrollPos, 30);
+			float offset = ConsoleGUI.LableStyle.fontSize;
+			_scrollPos = ConsoleGUI.BeginScrollView(_scrollPos, offset);
 			foreach (var pair in pools)
 			{
 				string content = $"[{pair.Value.Location}] CacheCount = {pair.Value.Count} SpwanCount = {pair.Value.SpawnCount}";
-				if (pair.Value.States == EAssetStates.Fail)
+				if (pair.Value.States == EOperationStatus.Failed)
 					ConsoleGUI.RedLable(content);
 				else
 					ConsoleGUI.Lable(content);

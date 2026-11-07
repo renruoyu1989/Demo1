@@ -3,6 +3,7 @@
 // Copyright©2018-2020 何冠峰
 // Licensed under the MIT license
 //--------------------------------------------------
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -15,15 +16,45 @@ namespace MotionFramework.Console
 	{
 		// GUI相关
 		private Vector2 _scrollPos = Vector2.zero;
+		private int _timeScaleLevel = 5;
 
-		void IConsoleWindow.OnStart()
-		{
-		}
 		void IConsoleWindow.OnGUI()
 		{
 			int space = 15;
 
-			_scrollPos = ConsoleGUI.BeginScrollView(_scrollPos, 0);
+			_scrollPos = ConsoleGUI.BeginScrollView(_scrollPos);
+
+			// 时间缩放相关
+			GUILayout.Space(space);
+			GUILayout.BeginHorizontal();
+			if (GUILayout.Button("Reset", ConsoleGUI.ButtonStyle, GUILayout.Width(100)))
+			{
+				_timeScaleLevel = 5;
+				SetTimeScale(_timeScaleLevel);
+			}
+			if (GUILayout.Button("+", ConsoleGUI.ButtonStyle, GUILayout.Width(100)))
+			{
+				_timeScaleLevel++;
+				_timeScaleLevel = Mathf.Clamp(_timeScaleLevel, 0, 9);
+				SetTimeScale(_timeScaleLevel);
+			}
+			if (GUILayout.Button("-", ConsoleGUI.ButtonStyle, GUILayout.Width(100)))
+			{
+				_timeScaleLevel--;
+				_timeScaleLevel = Mathf.Clamp(_timeScaleLevel, 0, 9);
+				SetTimeScale(_timeScaleLevel);
+			}
+			GUILayout.EndHorizontal();
+
+			GUILayout.Space(space);
+
+			// DateTime dt = DataManager.Instance.GetData<DataRuntime>().GetServerTimeNow();
+			//ConsoleGUI.Lable($"Server Time : {dt.ToLongDateString() + dt.ToLongTimeString()}");
+
+			ConsoleGUI.Lable($"Local Time : {DateTime.Now.ToLongDateString() + DateTime.Now.ToLongTimeString()}");
+
+			ConsoleGUI.Lable($"Elapse Time : {GetElapseTime()}");
+			ConsoleGUI.Lable($"Time Scale : {Time.timeScale}");
 
 			GUILayout.Space(space);
 			ConsoleGUI.Lable($"Unity Version : {Application.unityVersion}");
@@ -34,11 +65,12 @@ namespace MotionFramework.Console
 
 			GUILayout.Space(space);
 			ConsoleGUI.Lable($"OS : {SystemInfo.operatingSystem}");
-			ConsoleGUI.Lable($"OS Memory : {SystemInfo.systemMemorySize / 1000}GB");
+			ConsoleGUI.Lable($"OS Memory : {SystemInfo.systemMemorySize / 1024f:f1}GB");
 			ConsoleGUI.Lable($"CPU : {SystemInfo.processorType}");
 			ConsoleGUI.Lable($"CPU Core : {SystemInfo.processorCount}");
 
 			GUILayout.Space(space);
+			ConsoleGUI.Lable($"Device UID : {SystemInfo.deviceUniqueIdentifier}");
 			ConsoleGUI.Lable($"Device Model : {SystemInfo.deviceModel}");
 			ConsoleGUI.Lable($"Device Name : {SystemInfo.deviceName}");
 			ConsoleGUI.Lable($"Device Type : {SystemInfo.deviceType}");
@@ -46,7 +78,7 @@ namespace MotionFramework.Console
 			GUILayout.Space(space);
 			ConsoleGUI.Lable($"Graphics Device Name : {SystemInfo.graphicsDeviceName}");
 			ConsoleGUI.Lable($"Graphics Device Type : {SystemInfo.graphicsDeviceType}");
-			ConsoleGUI.Lable($"Graphics Memory : {SystemInfo.graphicsMemorySize / 1000}GB");
+			ConsoleGUI.Lable($"Graphics Memory : {SystemInfo.graphicsMemorySize / 1024f:f1}GB");
 			ConsoleGUI.Lable($"Graphics Shader Level : {SystemInfo.graphicsShaderLevel}");
 			ConsoleGUI.Lable($"Multi-threaded Rendering : {SystemInfo.graphicsMultiThreaded}");
 			ConsoleGUI.Lable($"Max Cubemap Size : {SystemInfo.maxCubemapSize}");
@@ -65,23 +97,17 @@ namespace MotionFramework.Console
 			ConsoleGUI.Lable($"Graphics Quality : {QualitySettings.names[QualitySettings.GetQualityLevel()]}");
 
 			GUILayout.Space(space);
-			long memory = Profiler.GetTotalReservedMemoryLong() / 1000000;
-			ConsoleGUI.Lable($"Total Memory : {memory}MB");
-			memory = Profiler.GetTotalAllocatedMemoryLong() / 1000000;
-			ConsoleGUI.Lable($"Used Memory : {memory}MB");
-			memory = Profiler.GetTotalUnusedReservedMemoryLong() / 1000000;
-			ConsoleGUI.Lable($"Free Memory : {memory}MB");
-			memory = Profiler.GetMonoHeapSizeLong() / 1000000;
-			ConsoleGUI.Lable($"Total Mono Memory : {memory}MB");
-			memory = Profiler.GetMonoUsedSizeLong() / 1000000;
-			ConsoleGUI.Lable($"Used Mono Memory : {memory}MB");
+			ConsoleGUI.Lable($"Reserved Total Memory : {Profiler.GetTotalReservedMemoryLong() / 1048576}MB");
+			ConsoleGUI.Lable($"Allocated Graphics Memory : {Profiler.GetAllocatedMemoryForGraphicsDriver() / 1048576}MB");
+			ConsoleGUI.Lable($"Used Memory Pool : {Profiler.GetTotalAllocatedMemoryLong() / 1048576}MB");
+			ConsoleGUI.Lable($"Unused Memory Pool : {Profiler.GetTotalUnusedReservedMemoryLong() / 1048576}MB");
+			ConsoleGUI.Lable($"Total Mono Memory : {Profiler.GetMonoHeapSizeLong() / 1048576}MB");
+			ConsoleGUI.Lable($"Used Mono Memory : {Profiler.GetMonoUsedSizeLong() / 1048576}MB");
 
 			GUILayout.Space(space);
 			ConsoleGUI.Lable($"Battery Level : {SystemInfo.batteryLevel}");
 			ConsoleGUI.Lable($"Battery Status : {SystemInfo.batteryStatus}");
 			ConsoleGUI.Lable($"Network Status : {GetNetworkState()}");
-			ConsoleGUI.Lable($"Elapse Time : {GetElapseTime()}");
-			ConsoleGUI.Lable($"Time Scale : {Time.timeScale}");
 
 			ConsoleGUI.EndScrollView();
 		}
@@ -103,6 +129,21 @@ namespace MotionFramework.Console
 			int hour = (int)((Time.realtimeSinceStartup % 86400f) / 3600f);
 			int sec = (int)(((Time.realtimeSinceStartup % 86400f) % 3600f) / 60f);
 			return $"{day}天{hour}小时{sec}分";
+		}
+		private void SetTimeScale(int timeScaleLevel)
+		{
+			if (timeScaleLevel == 5)
+			{
+				Time.timeScale = 1f;
+			}
+			else if (timeScaleLevel > 5)
+			{
+				Time.timeScale = timeScaleLevel - 4;
+			}
+			else
+			{
+				Time.timeScale = timeScaleLevel / 5f;
+			}
 		}
 	}
 }

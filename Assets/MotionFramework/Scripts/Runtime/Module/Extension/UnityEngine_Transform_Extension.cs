@@ -8,9 +8,9 @@ using System.Collections.Generic;
 
 namespace UnityEngine
 {
-	public static class UnityEngine_Transform_Extension
+	public static partial class UnityEngine_Transform_Extension
 	{
-		private static List<Transform> _childStack = new List<Transform>(1000);
+		private static readonly List<Transform> _childStack = new List<Transform>(1000);
 
 		/// <summary>
 		/// 获取第一个子物体
@@ -86,6 +86,18 @@ namespace UnityEngine
 
 			// 没有发现返回空
 			return null;
+		}
+		
+		/// <summary>
+		/// 广度优先搜索查找子物体的组件
+		/// </summary>
+		public static T BFSearch<T>(this Transform root, string childName) where T : UnityEngine.Component
+		{
+			Transform trans = root.BFSearch(childName);
+			if (trans == null)
+				return null;
+
+			return trans.GetComponent<T>();
 		}
 	}
 }

@@ -6,7 +6,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using MotionFramework.Console;
-using MotionFramework.Resource;
+using YooAsset;
 
 namespace MotionFramework.Scene
 {
@@ -22,9 +22,11 @@ namespace MotionFramework.Scene
 		void IModule.OnCreate(System.Object param)
 		{
 		}
+
 		void IModule.OnUpdate()
 		{
 		}
+
 		void IModule.OnGUI()
 		{
 			string mainSceneName = _mainScene == null ? string.Empty : _mainScene.Location;
@@ -38,7 +40,7 @@ namespace MotionFramework.Scene
 		/// <param name="location">场景资源地址</param>
 		/// <param name="activeOnLoad">加载完成时是否激活场景</param>
 		/// <param name="callback">场景加载完毕的回调</param>
-		public void ChangeMainScene(string location, bool activeOnLoad, System.Action<SceneInstance> callback)
+		public void ChangeMainScene(string location, bool activeOnLoad, System.Action<SceneHandle> callback)
 		{
 			if (_mainScene != null)
 			{
@@ -52,23 +54,39 @@ namespace MotionFramework.Scene
 		}
 
 		/// <summary>
-		/// 在当前主场景的基础上加载附加场景
+		/// 在当前主场景上加载附加场景
 		/// </summary>
 		/// <param name="location">场景资源地址</param>
 		/// <param name="activeOnLoad">加载完成时是否激活场景</param>
 		/// <param name="callback">场景加载完毕的回调</param>
-		public void LoadAdditionScene(string location, bool activeOnLoad, System.Action<SceneInstance> callback)
+		public void LoadAdditionScene(string location, bool activeOnLoad, System.Action<SceneHandle> callback)
 		{
 			AssetScene scene = TryGetAdditionScene(location);
 			if (scene != null)
 			{
-				MotionLog.Log(ELogLevel.Warning, $"The addition scene {location} is already load.");
+				MotionLog.Warning($"The addition scene {location} is already load.");
 				return;
 			}
 
 			AssetScene newScene = new AssetScene(location);
 			_additionScenes.Add(newScene);
 			newScene.Load(true, activeOnLoad, callback);
+		}
+
+		/// <summary>
+		/// 卸载当前主场景的附加场景
+		/// </summary>
+		/// <param name="location"></param>
+		public void UnLoadAdditionScene(string location)
+		{
+			for (int i = _additionScenes.Count - 1; i >= 0; i--)
+			{
+				if (_additionScenes[i].Location == location)
+				{
+					_additionScenes[i].UnLoad();
+					_additionScenes.RemoveAt(i);
+				}
+			}
 		}
 
 		/// <summary>
@@ -86,7 +104,7 @@ namespace MotionFramework.Scene
 			if (scene != null)
 				return scene.Progress;
 
-			MotionLog.Log(ELogLevel.Warning, $"Not found scene {location}");
+			MotionLog.Warning($"Not found scene {location}");
 			return 0;
 		}
 
@@ -105,7 +123,7 @@ namespace MotionFramework.Scene
 			if (scene != null)
 				return scene.IsDone;
 
-			MotionLog.Log(ELogLevel.Warning, $"Not found scene {location}");
+			MotionLog.Warning($"Not found scene {location}");
 			return false;
 		}
 

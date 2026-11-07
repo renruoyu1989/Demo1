@@ -62,10 +62,15 @@ namespace MotionFramework.Editor
 		/// </summary>
 		public static void CopyTextureImporter(TextureImporter targetImporter, TextureImporter templateImporter)
 		{
+			var recordBorder = targetImporter.spriteBorder;
+			var recordPivot = targetImporter.spritePivot;
+
 			// 通用属性
 			TextureImporterSettings temper = new TextureImporterSettings();
 			templateImporter.ReadTextureSettings(temper);
 			targetImporter.SetTextureSettings(temper);
+			targetImporter.spriteBorder = recordBorder;
+			targetImporter.spritePivot = recordPivot;
 
 			// 平台设置
 			TextureImporterPlatformSettings platformSettingPC = templateImporter.GetPlatformTextureSettings("Standalone");
@@ -86,6 +91,14 @@ namespace MotionFramework.Editor
 			targetImporter.loadInBackground = templateImporter.loadInBackground;
 			targetImporter.ambisonic = templateImporter.ambisonic;
 			targetImporter.defaultSampleSettings = templateImporter.defaultSampleSettings;
+
+			// 注意：Normalize没有暴露的接口
+			var templateObject = new SerializedObject(templateImporter);
+			var templateProperty = templateObject.FindProperty("m_Normalize");
+			var targetObject = new SerializedObject(targetImporter);
+			var targetProperty = targetObject.FindProperty("m_Normalize");
+			targetProperty.boolValue = templateProperty.boolValue;
+			targetObject.ApplyModifiedProperties();
 
 			// 平台设置
 			AudioImporterSampleSettings sampleSettingsPC = templateImporter.GetOverrideSampleSettings("Standalone");

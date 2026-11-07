@@ -6,8 +6,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using MotionFramework.Utility;
 using UnityEngine;
+using MotionFramework.Utility;
 
 namespace MotionFramework.Console
 {
@@ -37,10 +37,9 @@ namespace MotionFramework.Console
 		/// 控制台节点列表
 		/// </summary>
 		private readonly static List<WindowWrapper> _wrappers = new List<WindowWrapper>();
-		private static bool _isStart = false;
 
 		// GUI相关
-		private static bool _visibleToggle = false;
+		private static bool _visible = false;
 		private static int _showIndex = 0;
 		private static Texture _bgTexture;
 		private static string[] _toolbarTitles;
@@ -48,7 +47,8 @@ namespace MotionFramework.Console
 		/// <summary>
 		/// 初始化控制台
 		/// </summary>
-		public static void Initialize()
+		/// <param name="assemblyName">扩展的控制台窗口所在的程序集</param>
+		public static void Initialize(string assemblyName = AssemblyUtility.GameScriptAssemblyName)
 		{
 			// 加载背景纹理
 			string textureName = "console_background";
@@ -56,14 +56,16 @@ namespace MotionFramework.Console
 			if (_bgTexture == null)
 				UnityEngine.Debug.LogWarning($"Not found {textureName} texture in Resources folder.");
 
-			// 获取所有调试类
-			List<Type> allTypes = AssemblyUtility.GetAssignableAttributeTypes(typeof(IConsoleWindow), typeof(ConsoleAttribute));
-			for (int i = 0; i < allTypes.Count; i++)
+			// 获取所有控制台窗口类
+			List<Type> types = AssemblyUtility.GetAssignableAttributeTypes(AssemblyUtility.MotionFrameworkAssemblyName, typeof(IConsoleWindow), typeof(ConsoleAttribute));
+			List<Type> temps = AssemblyUtility.GetAssignableAttributeTypes(assemblyName, typeof(IConsoleWindow), typeof(ConsoleAttribute));
+			types.AddRange(temps);
+			for (int i = 0; i < types.Count; i++)
 			{
-				ConsoleAttribute attribute = (ConsoleAttribute)Attribute.GetCustomAttribute(allTypes[i], typeof(ConsoleAttribute));
+				ConsoleAttribute attribute = (ConsoleAttribute)Attribute.GetCustomAttribute(types[i], typeof(ConsoleAttribute));
 				WindowWrapper wrapper = new WindowWrapper()
 				{
-					ClassType = allTypes[i],
+					ClassType = types[i],
 					Title = attribute.Title,
 					Priority = attribute.Order,
 				};
@@ -90,42 +92,45 @@ namespace MotionFramework.Console
 		}
 
 		/// <summary>
-		/// 绘制GUI
+		/// 绘制控制台
+		/// 注意：该接口必须在OnGUI函数内调用
 		/// </summary>
-		public static void DrawGUI()
+		public static void Draw()
 		{
 			// 注意：GUI接口只能在OnGUI内部使用
 			ConsoleGUI.InitGlobalStyle();
 
-			if (_isStart == false)
+			float posX = Screen.safeArea.x;
+			float posY = Screen.height - Screen.safeArea.height - Screen.safeArea.y;
+
+			if (_visible == false)
 			{
-				_isStart = true;
-				for (int i = 0; i < _wrappers.Count; i++)
-				{
-					WindowWrapper wrapper = _wrappers[i];
-					wrapper.Instance.OnStart();
-				}
+				// 显示按钮
+				if (GUI.Button(new Rect(posX + 20, posY + 20, ConsoleGUI.XStyle.fixedWidth, ConsoleGUI.XStyle.fixedHeight), "X", ConsoleGUI.XStyle))
+					_visible = true;
 			}
+			else
+			{
+				Rect windowRect = new Rect(posX, posY, Screen.safeArea.width, Screen.safeArea.height);
+				GUI.Window(0, windowRect, DrawWindow, string.Empty);
+			}
+		}
+		private static void DrawWindow(int windowID)
+		{
+			// 绘制背景
+			if (_visible && _bgTexture != null)
+				GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), _bgTexture, ScaleMode.StretchToFill, true);
 
 			GUILayout.BeginHorizontal();
 			{
-				// 绘制背景
-				if (_visibleToggle && _bgTexture != null)
-					GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), _bgTexture, ScaleMode.StretchToFill, true);
-
-				// 显示开关
+				// 隐藏按钮
 				if (GUILayout.Button("X", ConsoleGUI.ButtonStyle, GUILayout.Width(ConsoleGUI.ButtonStyle.fixedHeight)))
-					_visibleToggle = !_visibleToggle;
+					_visible = false;
 
 				// 绘制按钮栏
-				// 注意：这里不能提前return，否则BeginHorizontal和EndHorizontal不配对，Unity每帧都会报GUI Layout错误
-				if (_visibleToggle)
-					_showIndex = GUILayout.Toolbar(_showIndex, _toolbarTitles, ConsoleGUI.ToolbarStyle);
+				_showIndex = GUILayout.Toolbar(_showIndex, _toolbarTitles, ConsoleGUI.ToolbarStyle);
 			}
 			GUILayout.EndHorizontal();
-
-			if (_visibleToggle == false)
-				return;
 
 			// 绘制选中窗口
 			for (int i = 0; i < _wrappers.Count; i++)

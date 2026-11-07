@@ -25,19 +25,41 @@ namespace MotionFramework
 		}
 
 		private static readonly List<ModuleWrapper> _coms = new List<ModuleWrapper>(100);
-		private static MonoBehaviour _behaviour;
+		private static MonoBehaviour _behaviour;	
 		private static bool _isDirty = false;
-
+		private static long _frame = 0;
 
 		/// <summary>
 		/// 初始化框架
 		/// </summary>
-		public static void Initialize(MonoBehaviour behaviour)
+		public static void Initialize(MonoBehaviour behaviour, Action<ELogLevel, string> logCallback)
 		{
+			if (behaviour == null)
+				throw new Exception("MotionFramework behaviour is null.");
 			if (_behaviour != null)
 				throw new Exception($"{nameof(MotionEngine)} is already initialized.");
 
+			UnityEngine.Object.DontDestroyOnLoad(behaviour.gameObject);
 			_behaviour = behaviour;
+
+			// 注册日志回调
+			if (logCallback != null)
+				MotionLog.RegisterCallback(logCallback);
+
+			behaviour.StartCoroutine(CheckFrame());
+		}
+
+		/// <summary>
+		/// 检测MotionEngine更新方法
+		/// </summary>
+		private static IEnumerator CheckFrame()
+		{
+			var wait = new WaitForSeconds(1f);
+			yield return wait;
+
+			// 说明：初始化之后，如果忘记更新MotionEngine，这里会抛出异常
+			if (_frame == 0)
+				throw new Exception($"Please call update method : MotionEngine.Update");	
 		}
 
 		/// <summary>
@@ -45,6 +67,8 @@ namespace MotionFramework
 		/// </summary>
 		public static void Update()
 		{
+			_frame++;
+
 			// 如果有新模块需要重新排序
 			if (_isDirty)
 			{
@@ -68,9 +92,9 @@ namespace MotionFramework
 		}
 
 		/// <summary>
-		/// GUI绘制
+		/// 绘制所有模块的GUI内容
 		/// </summary>
-		public static void DrawGUI()
+		internal static void DrawModulesGUIContent()
 		{
 			for (int i = 0; i < _coms.Count; i++)
 			{
@@ -122,7 +146,7 @@ namespace MotionFramework
 				priority = --minPriority;
 			}
 
-			MotionLog.Log(ELogLevel.Log, $"Create game module : {typeof(T)}");
+			MotionLog.Log($"Create game module : {typeof(T)}");
 			T module = Activator.CreateInstance<T>();
 			ModuleWrapper wrapper = new ModuleWrapper(module, priority);
 			wrapper.Module.OnCreate(createParam);
@@ -144,7 +168,7 @@ namespace MotionFramework
 					return _coms[i].Module as T;
 			}
 
-			MotionLog.Log(ELogLevel.Warning, $"Not found game module {type}");
+			MotionLog.Warning($"Not found game module {type}");
 			return null;
 		}
 

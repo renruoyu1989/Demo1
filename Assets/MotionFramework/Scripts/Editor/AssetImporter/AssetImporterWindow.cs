@@ -14,7 +14,7 @@ namespace MotionFramework.Editor
 	{
 		static AssetImporterWindow _thisInstance;
 
-		[MenuItem("MotionTools/Asset Importer", false, 102)]
+		[MenuItem("MotionTools/Asset Importer", false, 104)]
 		static void ShowWindow()
 		{
 			if (_thisInstance == null)
@@ -22,7 +22,6 @@ namespace MotionFramework.Editor
 				_thisInstance = EditorWindow.GetWindow(typeof(AssetImporterWindow), false, "资源导入工具", true) as AssetImporterWindow;
 				_thisInstance.minSize = new Vector2(800, 600);
 			}
-
 			_thisInstance.Show();
 		}
 
@@ -40,13 +39,8 @@ namespace MotionFramework.Editor
 		private bool _isInit = false;
 		private void Init()
 		{
-			// 字典KEY转换为数组
-			List<string> keyList = new List<string>();
-			foreach (var pair in ImportSettingData.CacheTypes)
-			{
-				keyList.Add(pair.Key);
-			}
-			_processorClassArray = keyList.ToArray();
+			List<string> names = AssetImporterSettingData.GetProcessorNames();
+			_processorClassArray = names.ToArray();
 		}
 		private int NameToIndex(string name)
 		{
@@ -69,6 +63,7 @@ namespace MotionFramework.Editor
 
 		private void OnGUI()
 		{
+			// 初始化
 			if (_isInit == false)
 			{
 				_isInit = true;
@@ -77,26 +72,26 @@ namespace MotionFramework.Editor
 
 			// 列表显示
 			EditorGUILayout.Space();
-			for (int i = 0; i < ImportSettingData.Setting.Elements.Count; i++)
+			for (int i = 0; i < AssetImporterSettingData.Setting.Elements.Count; i++)
 			{
-				string folderPath = ImportSettingData.Setting.Elements[i].FolderPath;
-				string processorName = ImportSettingData.Setting.Elements[i].ProcessorName;
+				string directory = AssetImporterSettingData.Setting.Elements[i].ProcessDirectory;
+				string processorName = AssetImporterSettingData.Setting.Elements[i].ProcessorName;
 
 				EditorGUILayout.BeginHorizontal();
 				{
-					EditorGUILayout.LabelField(folderPath);
+					EditorGUILayout.LabelField(directory);
 
 					int index = NameToIndex(processorName);
 					int newIndex = EditorGUILayout.Popup(index, _processorClassArray, GUILayout.MaxWidth(150));
 					if (newIndex != index)
 					{
-						string processClassName = IndexToName(newIndex);
-						ImportSettingData.ModifyElement(folderPath, processClassName);
+						string newProcessName = IndexToName(newIndex);
+						AssetImporterSettingData.ModifyElement(directory, newProcessName);
 					}
 
 					if (GUILayout.Button("-", GUILayout.MaxWidth(40)))
 					{
-						ImportSettingData.RemoveElement(folderPath);
+						AssetImporterSettingData.RemoveElement(directory);
 						break;
 					}
 				}
@@ -110,7 +105,7 @@ namespace MotionFramework.Editor
 				if (resultPath != null)
 				{
 					_lastOpenFolderPath = EditorTools.AbsolutePathToAssetPath(resultPath);
-					ImportSettingData.AddElement(_lastOpenFolderPath);
+					AssetImporterSettingData.AddElement(_lastOpenFolderPath);
 				}
 			}
 		}

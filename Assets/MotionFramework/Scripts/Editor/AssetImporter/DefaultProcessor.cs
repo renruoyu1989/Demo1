@@ -5,9 +5,8 @@
 //--------------------------------------------------
 using System.IO;
 using UnityEngine;
-using UnityEngine.U2D;
 using UnityEditor;
-using UnityEditor.U2D;
+using UnityEngine.U2D;
 
 namespace MotionFramework.Editor
 {

@@ -8,10 +8,9 @@ Sandbox/
 
 Assets/StreamingAssets
 Assets/StreamingAssets.meta
-Assets/Works/_Script_/Runtime/ILBinding
-Assets/Works/_Script_/Runtime/ILBinding.meta
-Assets/Works/Resource/Assembly
-Assets/Works/Resource/Assembly.meta
+Assets/GameRes/Assembly
+Assets/GameRes/Assembly.meta
+Bundles/
 
 *.sln
 *.suo

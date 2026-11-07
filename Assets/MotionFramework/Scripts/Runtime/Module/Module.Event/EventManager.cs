@@ -34,7 +34,23 @@ namespace MotionFramework.Event
 		/// </summary>
 		public void AddListener<TEvent>(System.Action<IEventMessage> listener) where TEvent : IEventMessage
 		{
-			int eventId = typeof(TEvent).GetHashCode();
+			AddListener(typeof(TEvent), listener);
+		}
+
+		/// <summary>
+		/// 添加监听
+		/// </summary>
+		public void AddListener(System.Type eventType, System.Action<IEventMessage> listener)
+		{
+			int eventId = eventType.GetHashCode();
+			AddListener(eventId, listener);
+		}
+
+		/// <summary>
+		/// 添加监听
+		/// </summary>
+		public void AddListener(int eventId, System.Action<IEventMessage> listener)
+		{
 			if (_listeners.ContainsKey(eventId) == false)
 				_listeners.Add(eventId, new List<Action<IEventMessage>>());
 			if (_listeners[eventId].Contains(listener) == false)
@@ -46,7 +62,23 @@ namespace MotionFramework.Event
 		/// </summary>
 		public void RemoveListener<TEvent>(System.Action<IEventMessage> listener) where TEvent : IEventMessage
 		{
-			int eventId = typeof(TEvent).GetHashCode();
+			RemoveListener(typeof(TEvent), listener);
+		}
+
+		/// <summary>
+		/// 移除监听
+		/// </summary>
+		public void RemoveListener(System.Type eventType, System.Action<IEventMessage> listener)
+		{
+			int eventId = eventType.GetHashCode();
+			RemoveListener(eventId, listener);
+		}
+
+		/// <summary>
+		/// 移除监听
+		/// </summary>
+		public void RemoveListener(int eventId, System.Action<IEventMessage> listener)
+		{
 			if (_listeners.ContainsKey(eventId))
 			{
 				if (_listeners[eventId].Contains(listener))
@@ -60,11 +92,19 @@ namespace MotionFramework.Event
 		public void SendMessage(IEventMessage message)
 		{
 			int eventId = message.GetType().GetHashCode();
+			SendMessage(eventId, message);
+		}
+
+		/// <summary>
+		/// 广播事件
+		/// </summary>
+		public void SendMessage(int eventId, IEventMessage message)
+		{
 			if (_listeners.ContainsKey(eventId) == false)
 				return;
 
 			List<Action<IEventMessage>> listeners = _listeners[eventId];
-			for (int i = 0; i < listeners.Count; i++)
+			for (int i = listeners.Count - 1; i >= 0; i--)
 			{
 				listeners[i].Invoke(message);
 			}

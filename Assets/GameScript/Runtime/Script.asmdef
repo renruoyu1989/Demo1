@@ -1,0 +1,16 @@
+{
+    "name": "Script",
+    "references": [
+        "MotionFramework",
+        "Script.ThirdParty",
+        "YooAsset"
+    ],
+    "optionalUnityReferences": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": []
+}

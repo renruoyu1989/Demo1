@@ -16,22 +16,20 @@ namespace MotionFramework.Editor
 		static AssetSearchWindow _thisInstance;
 
 		[MenuItem("MotionTools/Asset Search", false, 103)]
-		static void Init()
+		static void ShowWindow()
 		{
 			if (_thisInstance == null)
 			{
 				_thisInstance = EditorWindow.GetWindow(typeof(AssetSearchWindow), false, "资源引用搜索工具", true) as AssetSearchWindow;
 				_thisInstance.minSize = new Vector2(400, 600);
 			}
-
 			_thisInstance.Show();
 		}
-
 
 		/// <summary>
 		/// 默认的搜索路径
 		/// </summary>
-		private const string DEFAULT_SEARCH_PATH = "Assets/Works/Resources";
+		private const string DEFAULT_SEARCH_PATH = "Assets";
 
 		/// <summary>
 		/// 显示集合
@@ -58,6 +56,11 @@ namespace MotionFramework.Editor
 		/// </summary>
 		private Vector2 _scrollPos = Vector2.zero;
 
+		/// <summary>
+		/// 递归检测
+		/// </summary>
+		private bool _recursive = true;
+
 
 		private void OnGUI()
 		{
@@ -83,6 +86,9 @@ namespace MotionFramework.Editor
 				if (spriteObject != null)
 					_searchObject = spriteObject;
 			}
+
+			// 递归检测
+			_recursive = EditorGUILayout.Toggle("递归检测", _recursive);
 
 			// 执行搜索
 			EditorGUILayout.Space();
@@ -121,10 +127,14 @@ namespace MotionFramework.Editor
 				string HeaderName = value.ToString();
 				if (value == EAssetFileExtension.prefab)
 					HeaderName = "预制体";
+				else if (value == EAssetFileExtension.unity)
+					HeaderName = "场景";
 				else if (value == EAssetFileExtension.fbx)
 					HeaderName = "模型";
-				else if (value == EAssetFileExtension.cs)
-					HeaderName = "脚本";
+				else if (value == EAssetFileExtension.anim)
+					HeaderName = "动画";
+				else if (value == EAssetFileExtension.controller)
+					HeaderName = "控制器";
 				else if (value == EAssetFileExtension.png || value == EAssetFileExtension.jpg)
 					HeaderName = "图片";
 				else if (value == EAssetFileExtension.mat)
@@ -133,10 +143,8 @@ namespace MotionFramework.Editor
 					HeaderName = "着色器";
 				else if (value == EAssetFileExtension.ttf)
 					HeaderName = "字体";
-				else if (value == EAssetFileExtension.anim)
-					HeaderName = "动画";
-				else if (value == EAssetFileExtension.unity)
-					HeaderName = "场景";
+				else if (value == EAssetFileExtension.cs)
+					HeaderName = "脚本";
 				else
 					throw new NotImplementedException(value.ToString());
 
@@ -183,8 +191,6 @@ namespace MotionFramework.Editor
 		/// <param name="searchFolder">搜索的文件夹</param>
 		private void FindReferenceInProject(string searchAssetPath, string searchFolder, EAssetSearchType serachType)
 		{
-			ShowProgress(0, 0, 0);
-
 			// 创建集合
 			if (_collection == null)
 			{
@@ -209,13 +215,15 @@ namespace MotionFramework.Editor
 				allGuids = AssetDatabase.FindAssets($"t:{serachType}", new string[] { $"{searchFolder}" });
 
 			// 查找引用
-			int curCount = 0;
+			int progressValue = 0;
 			foreach (string guid in allGuids)
 			{
 				string path = AssetDatabase.GUIDToAssetPath(guid);
-				string[] dpends = AssetDatabase.GetDependencies(path, false);
+				string[] dpends = AssetDatabase.GetDependencies(path, _recursive);
 				foreach (string name in dpends)
 				{
+					if (name.Equals(path))
+						continue;
 					if (name.Equals(searchAssetPath))
 					{
 						foreach (EAssetFileExtension value in Enum.GetValues(typeof(EAssetFileExtension)))
@@ -231,11 +239,9 @@ namespace MotionFramework.Editor
 						}
 					}
 				}
-				curCount++;
-				ShowProgress((float)curCount / (float)allGuids.Length, allGuids.Length, curCount);
+				EditorTools.DisplayProgressBar("正在搜索", ++progressValue, allGuids.Length);
 			}
-
-			EditorUtility.ClearProgressBar();
+			EditorTools.ClearProgressBar();
 		}
 
 		/// <summary>
@@ -326,11 +332,6 @@ namespace MotionFramework.Editor
 			}
 
 			return null;
-		}
-
-		private void ShowProgress(float progress, int total, int cur)
-		{
-			EditorUtility.DisplayProgressBar("Searching", $"Finding ({cur}/{total}), please waiting...", progress);
 		}
 	}
 }

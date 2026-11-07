@@ -1,9 +1,9 @@
 {
     "name": "MotionFramework.Editor",
+    "rootNamespace": "",
     "references": [
-        "MotionFramework"
+        "GUID:fe69f117e6768634b80590ba6820be21"
     ],
-    "optionalUnityReferences": [],
     "includePlatforms": [
         "Editor"
     ],
@@ -12,5 +12,7 @@
     "overrideReferences": false,
     "precompiledReferences": [],
     "autoReferenced": true,
-    "defineConstraints": []
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }

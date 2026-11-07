@@ -21,7 +21,7 @@ namespace MotionFramework.Editor
 	/// </summary>
 	public static class EditorTools
 	{
-		#region NGUI相关代码
+		#region NGUI代码
 		/// <summary>
 		/// Draw a distinctly different looking header label
 		/// </summary>
@@ -67,13 +67,13 @@ namespace MotionFramework.Editor
 		}
 		#endregion
 
-		#region 搜索面板相关
+		#region 搜索面板
 		/// <summary>
 		/// 打开搜索面板
 		/// </summary>
 		/// <param name="title">标题名称</param>
-		/// <param name="defaultPath">默认搜索路径，例如：Assets/Works/Resources</param>
-		/// <returns>返回选择的绝对路径，如果无效返回NULL</returns>
+		/// <param name="defaultPath">默认搜索路径</param>
+		/// <returns>返回选择的文件夹绝对路径，如果无效返回NULL</returns>
 		public static string OpenFolderPanel(string title, string defaultPath)
 		{
 			string openPath = EditorUtility.OpenFolderPanel(title, defaultPath, string.Empty);
@@ -85,8 +85,38 @@ namespace MotionFramework.Editor
 				Debug.LogWarning("Please select unity assets folder.");
 				return null;
 			}
-
 			return openPath;
+		}
+
+		/// <summary>
+		/// 打开搜索面板
+		/// </summary>
+		/// <param name="title">标题名称</param>
+		/// <param name="defaultPath">默认搜索路径</param>
+		/// <returns>返回选择的文件绝对路径，如果无效返回NULL</returns>
+		public static string OpenFilePath(string title, string defaultPath)
+		{
+			string openPath = EditorUtility.OpenFilePanel(title, defaultPath, string.Empty);
+			if (string.IsNullOrEmpty(openPath))
+				return null;
+
+			if (openPath.Contains("/Assets") == false)
+			{
+				Debug.LogWarning("Please select unity assets file.");
+				return null;
+			}
+			return openPath;
+		}
+		#endregion
+
+		#region 进度条
+		public static void DisplayProgressBar(string tips, int progressValue, int totalValue)
+		{
+			EditorUtility.DisplayProgressBar("进度", $"{tips} : {progressValue}/{totalValue}", (float)progressValue / totalValue);
+		}
+		public static void ClearProgressBar()
+		{
+			EditorUtility.ClearProgressBar();
 		}
 		#endregion
 
@@ -228,7 +258,58 @@ namespace MotionFramework.Editor
 		}
 		#endregion
 
-		#region 清空控制台
+		#region 材质球
+		/// <summary>
+		/// 清理无用的材质球属性
+		/// </summary>
+		public static bool ClearMaterialUnusedProperty(Material mat)
+		{
+			bool removeUnused = false;
+			SerializedObject so = new SerializedObject(mat);
+			SerializedProperty sp = so.FindProperty("m_SavedProperties");
+
+			sp.Next(true);
+			do
+			{
+				if (sp.isArray == false)
+					continue;
+
+				for (int i = sp.arraySize - 1; i >= 0; --i)
+				{
+					var p1 = sp.GetArrayElementAtIndex(i);
+					if (p1.isArray)
+					{
+						for (int ii = p1.arraySize - 1; ii >= 0; --ii)
+						{
+							var p2 = p1.GetArrayElementAtIndex(ii);
+							var val = p2.FindPropertyRelative("first");
+							if (mat.HasProperty(val.stringValue) == false)
+							{
+								Debug.Log($"Material {mat.name} remove unused property : {val.stringValue}");
+								p1.DeleteArrayElementAtIndex(ii);
+								removeUnused = true;
+							}
+						}
+					}
+					else
+					{
+						var val = p1.FindPropertyRelative("first");
+						if (mat.HasProperty(val.stringValue) == false)
+						{
+							Debug.Log($"Material {mat.name} remove unused property : {val.stringValue}");
+							sp.DeleteArrayElementAtIndex(i);
+							removeUnused = true;
+						}
+					}
+				}
+			}
+			while (sp.Next(false));
+			so.ApplyModifiedProperties();
+			return removeUnused;
+		}
+		#endregion
+
+		#region 控制台
 		private static MethodInfo _clearConsoleMethod;
 		private static MethodInfo ClearConsoleMethod
 		{
@@ -253,7 +334,7 @@ namespace MotionFramework.Editor
 		}
 		#endregion
 
-		#region 文件相关
+		#region 文件
 		/// <summary>
 		/// 测试写入权限
 		/// </summary>
@@ -282,10 +363,40 @@ namespace MotionFramework.Editor
 		/// <param name="filePath">文件路径</param>
 		public static void CreateFileDirectory(string filePath)
 		{
-			// If the destination directory doesn't exist, create it.
 			string destDirectory = Path.GetDirectoryName(filePath);
-			if (Directory.Exists(destDirectory) == false)
-				Directory.CreateDirectory(destDirectory);
+			CreateDirectory(destDirectory);
+		}
+
+		/// <summary>
+		/// 创建文件夹
+		/// </summary>
+		public static bool CreateDirectory(string directory)
+		{
+			if (Directory.Exists(directory) == false)
+			{
+				Directory.CreateDirectory(directory);
+				return true;
+			}
+			else
+			{
+				return false;
+			}
+		}
+
+		/// <summary>
+		/// 删除文件夹及子目录
+		/// </summary>
+		public static bool DeleteDirectory(string directory)
+		{
+			if (Directory.Exists(directory))
+			{
+				Directory.Delete(directory, true);
+				return true;
+			}
+			else
+			{
+				return false;
+			}
 		}
 
 		/// <summary>
@@ -441,7 +552,7 @@ namespace MotionFramework.Editor
 		}
 		#endregion
 
-		#region 路径相关
+		#region 路径
 		/// <summary>
 		/// 获取规范的路径
 		/// </summary>
@@ -457,14 +568,6 @@ namespace MotionFramework.Editor
 		{
 			string projectPath = Path.GetDirectoryName(Application.dataPath);
 			return GetRegularPath(projectPath);
-		}
-
-		/// <summary>
-		/// 去除路径里的文件格式
-		/// </summary>
-		public static string RemovePathSuffix(string path)
-		{
-			return path.Remove(path.LastIndexOf("."));
 		}
 
 		/// <summary>
@@ -511,7 +614,7 @@ namespace MotionFramework.Editor
 		}
 		#endregion
 
-		#region 字符串相关
+		#region 字符串
 		/// <summary>
 		/// 是否含有中文
 		/// </summary>
@@ -578,11 +681,11 @@ namespace MotionFramework.Editor
 		// BOOL
 		public static void PlayerSetBool(string key, bool value)
 		{
-			PlayerPrefs.SetInt(key, value ? 1 : 0);
+			EditorPrefs.SetInt(key, value ? 1 : 0);
 		}
 		public static bool PlayerGetBool(string key, bool defaultValue)
 		{
-			int result = PlayerPrefs.GetInt(key, defaultValue ? 1 : 0);
+			int result = EditorPrefs.GetInt(key, defaultValue ? 1 : 0);
 			return result != 0;
 		}
 
@@ -590,11 +693,11 @@ namespace MotionFramework.Editor
 		public static void PlayerSetEnum<T>(string key, T value)
 		{
 			string enumName = value.ToString();
-			PlayerPrefs.SetString(key, enumName);
+			EditorPrefs.SetString(key, enumName);
 		}
 		public static T PlayerGetEnum<T>(string key, T defaultValue)
 		{
-			string enumName = PlayerPrefs.GetString(key, defaultValue.ToString());
+			string enumName = EditorPrefs.GetString(key, defaultValue.ToString());
 			return StringConvert.NameToEnum<T>(enumName);
 		}
 		#endregion
