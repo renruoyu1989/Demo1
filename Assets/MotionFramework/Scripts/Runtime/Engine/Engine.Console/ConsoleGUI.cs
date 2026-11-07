@@ -27,6 +27,9 @@ namespace MotionFramework.Console
 		public static GUIStyle TextFieldStyle { private set; get; }
 		public static GUIStyle LableStyle { private set; get; }
 		public static GUIStyle RichLabelStyle { private set; get; }
+		public static GUIStyle WhiteLabelStyle { private set; get; }
+		public static GUIStyle RedLabelStyle { private set; get; }
+		public static GUIStyle YellowLabelStyle { private set; get; }
 		public static int RichLabelFontSize { private set; get; }
 
 		private static GUIStyle _cachedHorizontalScrollbarThumb;
@@ -92,9 +95,19 @@ namespace MotionFramework.Console
 				LableStyle = new GUIStyle(GUI.skin.label);
 				LableStyle.fontSize = (int)(24 * scale);
 
-				RichLabelStyle = GUIStyle.none;
+				// 注意：不能直接改 GUIStyle.none，那是全局共享实例
+				RichLabelStyle = new GUIStyle(GUI.skin.label);
 				RichLabelStyle.richText = true;
+				RichLabelStyle.fontSize = (int)(24 * scale);
 				RichLabelFontSize = (int)(24 * scale);
+
+				// 预先构建不同颜色的样式，避免每次输出都拼接富文本字符串（控制台打开时每帧都会产生 GC）
+				WhiteLabelStyle = new GUIStyle(RichLabelStyle);
+				WhiteLabelStyle.normal.textColor = Color.white;
+				RedLabelStyle = new GUIStyle(RichLabelStyle);
+				RedLabelStyle.normal.textColor = Color.red;
+				YellowLabelStyle = new GUIStyle(RichLabelStyle);
+				YellowLabelStyle.normal.textColor = Color.yellow;
 			}
 		}
 
@@ -129,15 +142,15 @@ namespace MotionFramework.Console
 		}
 		public static void Lable(string text)
 		{
-			GUILayout.Label($"<size={RichLabelFontSize}><color=white>{text}</color></size>", RichLabelStyle);
+			GUILayout.Label(text, WhiteLabelStyle);
 		}
 		public static void RedLable(string text)
 		{
-			GUILayout.Label($"<size={RichLabelFontSize}><color=red>{text}</color></size>", RichLabelStyle);
+			GUILayout.Label(text, RedLabelStyle);
 		}
 		public static void YellowLable(string text)
 		{
-			GUILayout.Label($"<size={RichLabelFontSize}><color=yellow>{text}</color></size>", RichLabelStyle);
+			GUILayout.Label(text, YellowLabelStyle);
 		}
 	}
 }

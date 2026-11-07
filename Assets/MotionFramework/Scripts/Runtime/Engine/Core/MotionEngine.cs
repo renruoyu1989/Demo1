@@ -84,11 +84,42 @@ namespace MotionFramework
 				});
 			}
 
-			// 轮询所有模块
+			// 轮询所有模块（单个模块异常不能阻断其它模块的更新）
 			for (int i = 0; i < _coms.Count; i++)
 			{
-				_coms[i].Module.OnUpdate();
+				try
+				{
+					_coms[i].Module.OnUpdate();
+				}
+				catch (Exception ex)
+				{
+					MotionLog.Error($"Module update failed : {_coms[i].Module.GetType()} , {ex}");
+				}
 			}
+		}
+
+		/// <summary>
+		/// 关闭框架：逆序销毁所有模块并清空框架状态
+		/// 注意：退出游戏或重新初始化之前必须调用，否则模块无法重建
+		/// </summary>
+		public static void Shutdown()
+		{
+			for (int i = _coms.Count - 1; i >= 0; i--)
+			{
+				try
+				{
+					_coms[i].Module.OnDestroy();
+				}
+				catch (Exception ex)
+				{
+					MotionLog.Error($"Module destroy failed : {_coms[i].Module.GetType()} , {ex}");
+				}
+			}
+
+			_coms.Clear();
+			_behaviour = null;
+			_isDirty = false;
+			_frame = 0;
 		}
 
 		/// <summary>

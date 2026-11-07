@@ -45,14 +45,26 @@ namespace MotionFramework.Audio
 		private Tweener musicTweener;
 
 		/// <summary>
-		/// 音频资源根目录
-		/// 注意：YooAsset 未启用可寻址（Addressable）时，资源定位地址就是资源全路径
+		/// 音频模块创建参数
 		/// </summary>
-		private const string BaseLocation = "Assets/GameRes";
+		public class CreateParameters
+		{
+			/// <summary>
+			/// 音频资源根目录
+			/// 注意：YooAsset 未启用可寻址（Addressable）时，资源定位地址就是资源全路径
+			/// </summary>
+			public string BaseLocation = "Assets/GameRes";
+		}
+
+		private string _baseLocation = "Assets/GameRes";
 
 
 		void IModule.OnCreate(System.Object param)
 		{
+			CreateParameters createParam = param as CreateParameters;
+			if (createParam != null && string.IsNullOrEmpty(createParam.BaseLocation) == false)
+				_baseLocation = createParam.BaseLocation;
+
 			_root = new GameObject("[AudioManager]");
 			UnityEngine.Object.DontDestroyOnLoad(_root);
 
@@ -86,7 +98,7 @@ namespace MotionFramework.Audio
 		{
 			if (_assets.ContainsKey(location) == false)
 			{
-				AssetAudio asset = new AssetAudio($"{BaseLocation}/{location}", audioLayer);
+				AssetAudio asset = new AssetAudio($"{_baseLocation}/{location}", audioLayer);
 				_assets.Add(location, asset);
 				asset.Load(null);
 			}
@@ -205,7 +217,7 @@ namespace MotionFramework.Audio
 			else
 			{
 				// 新建加载资源
-				AssetAudio assetAudio = new AssetAudio($"{BaseLocation}/{location}", EAudioLayer.Sound);
+				AssetAudio assetAudio = new AssetAudio($"{_baseLocation}/{location}", EAudioLayer.Sound);
 				_assets.Add(location, assetAudio);
 				assetAudio.Load((AudioClip clip) =>
 				{
@@ -308,7 +320,7 @@ namespace MotionFramework.Audio
 			else
 			{
 				// 新建加载资源
-				AssetAudio assetAudio = new AssetAudio($"{BaseLocation}/{location}", layer);
+				AssetAudio assetAudio = new AssetAudio($"{_baseLocation}/{location}", layer);
 				_assets.Add(location, assetAudio);
 				assetAudio.Load((AudioClip clip) =>
 				{

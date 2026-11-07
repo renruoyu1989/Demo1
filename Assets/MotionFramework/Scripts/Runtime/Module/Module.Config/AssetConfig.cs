@@ -41,6 +41,11 @@ namespace MotionFramework.Config
 		public bool IsPrepare { private set; get; }
 
 		/// <summary>
+		/// 加载或解析是否失败
+		/// </summary>
+		public bool IsFailed { private set; get; }
+
+		/// <summary>
 		/// 资源地址
 		/// </summary>
 		public string Location { private set; get; }
@@ -61,23 +66,43 @@ namespace MotionFramework.Config
 		}
 		private void Handle_Completed(AssetHandle obj)
 		{
-			try
+			if (obj.Status != EOperationStatus.Succeed || _handle == null || _handle.AssetObject == null)
 			{
-				TextAsset txt = _handle.AssetObject as TextAsset;
-				if (txt != null)
-				{
-					// 解析数据
-					ParseDataInternal(txt.bytes);
-				}
+				IsFailed = true;
+				MotionLog.Error($"Failed to load config {Location}, status = {obj.Status}, error = {obj.LastError}");
 			}
-			catch (Exception ex)
+			else
 			{
-				MotionLog.Error($"Failed to parse config {Location}. Error : {ex.ToString()}");
+				try
+				{
+					TextAsset txt = _handle.AssetObject as TextAsset;
+					if (txt == null)
+					{
+						IsFailed = true;
+						MotionLog.Error($"Config asset is not a TextAsset : {Location}");
+					}
+					else
+					{
+						// 解析数据
+						ParseDataInternal(txt.bytes);
+					}
+				}
+				catch (Exception ex)
+				{
+					IsFailed = true;
+					MotionLog.Error($"Failed to parse config {Location}. Error : {ex.ToString()}");
+				}
 			}
 
 			// 注意：为了节省内存这里立即释放了资源
-			_handle.Release();
+			if (_handle != null)
+			{
+				_handle.Completed -= Handle_Completed;
+				_handle.Release();
+				_handle = null;
+			}
 
+			// IsPrepare 表示加载流程结束（成功或失败），失败信息由 IsFailed 提供
 			IsPrepare = true;
 			_userCallback?.Invoke(this);
 		}

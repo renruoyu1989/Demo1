@@ -33,6 +33,11 @@ namespace MotionFramework.Scene
 		}
 
 		/// <summary>
+		/// 场景是否加载失败
+		/// </summary>
+		public bool IsFailed { private set; get; }
+
+		/// <summary>
 		/// 场景是否加载完毕
 		/// </summary>
 		public bool IsDone
@@ -60,8 +65,18 @@ namespace MotionFramework.Scene
 			MotionLog.Log($"Begin to load scene : {Location}");
 
 			LoadSceneMode sceneMode = isAdditive ? LoadSceneMode.Additive : LoadSceneMode.Single;
-			_handle = YooAssets.LoadSceneAsync(Location, sceneMode, LocalPhysicsMode.None, false);
+			// suspendLoad = !activeOnLoad：不自动激活时，由调用方通过 UnSuspend 手动激活
+			_handle = YooAssets.LoadSceneAsync(Location, sceneMode, LocalPhysicsMode.None, activeOnLoad == false);
 			_handle.Completed += Handle_Completed;
+		}
+
+		/// <summary>
+		/// 激活被挂起的场景（activeOnLoad 为 false 时需要手动调用）
+		/// </summary>
+		public void UnSuspend()
+		{
+			if (_handle != null)
+				_handle.UnSuspend();
 		}
 		public void UnLoad()
 		{
@@ -77,6 +92,12 @@ namespace MotionFramework.Scene
 		// 资源回调
 		private void Handle_Completed(SceneHandle obj)
 		{
+			if (obj.Status != EOperationStatus.Succeed)
+			{
+				IsFailed = true;
+				MotionLog.Error($"Failed to load scene : {Location}, status = {obj.Status}, error = {obj.LastError}");
+			}
+
 			_userCallback?.Invoke(_handle);
 		}
 	}

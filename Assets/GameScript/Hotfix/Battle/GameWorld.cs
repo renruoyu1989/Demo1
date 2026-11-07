@@ -41,11 +41,15 @@ namespace Hotfix
 		}
 		public void Destroy()
 		{
+			// 注销事件监听，避免二次进入时重复注册导致一次事件被处理多次
+			HotfixEventManager.Instance.RemoveListener(HotfixEventMessageTag.BattleEvent, OnHandleBattleEvent);
+
 			for (int i = 0; i < _entitys.Count; i++)
 			{
 				_entitys[i].Destroy();
 			}
 			_entitys.Clear();
+			_mainPlayer = null;
 		}
 		public void OnHandleBattleEvent(IHotfixEventMessage msg)
 		{
@@ -61,7 +65,8 @@ namespace Hotfix
 
 			if(msg is BattleEvent.PlayerSpell)
 			{
-				_mainPlayer.HandleEvent(msg);
+				if (_mainPlayer != null)
+					_mainPlayer.HandleEvent(msg);
 			}
 		}
 

@@ -8,6 +8,7 @@ using MotionFramework.Event;
 using MotionFramework.Audio;
 using MotionFramework.Scene;
 using MotionFramework.Pool;
+using MotionFramework.Config;
 using YooAsset;
 
 public class GameLauncher : MonoBehaviour
@@ -23,8 +24,24 @@ public class GameLauncher : MonoBehaviour
 	/// </summary>
 	public const string PackageName = "DefaultPackage";
 
+	/// <summary>
+	/// 资源系统初始化最大重试次数
+	/// </summary>
+	private const int MaxInitRetryCount = 3;
+
+	private static GameLauncher _instance;
+
 	void Awake()
 	{
+		// 单例保护：场景重载或误放多个启动器时会重复初始化框架
+		if (_instance != null && _instance != this)
+		{
+			UnityEngine.Debug.LogError($"{nameof(GameLauncher)} 已存在，销毁重复实例 : {gameObject.name}");
+			Destroy(gameObject);
+			return;
+		}
+		_instance = this;
+
 		// 不销毁游戏对象
 		DontDestroyOnLoad(gameObject);
 
@@ -47,6 +64,15 @@ public class GameLauncher : MonoBehaviour
 	void Start()
 	{
 		StartCoroutine(CreateGameModules());
+	}
+	void OnApplicationQuit()
+	{
+		// 释放常驻的图集句柄，避免退出/热重载时残留
+		SpriteAtlasLoader.ReleaseAll();
+
+		// 逆序销毁所有框架模块，保证下次可以重新初始化
+		MotionEngine.Shutdown();
+		_instance = null;
 	}
 	void Update()
 	{
@@ -124,27 +150,25 @@ public class GameLauncher : MonoBehaviour
 		ResourcePackage package = YooAssets.CreatePackage(PackageName);
 		YooAssets.SetDefaultPackage(package);
 
-		InitializationOperation initializationOperation;
-		if (PlayMode == EPlayMode.EditorSimulateMode)
+		// 2. 初始化资源包（失败自动重试，避免弱网/包体缺失直接黑屏）
+		bool initialized = false;
+		for (int i = 0; i < MaxInitRetryCount; i++)
 		{
-			// 编辑器模拟模式：直接读取工程内资源
-			PackageInvokeBuildResult buildResult = EditorSimulateModeHelper.SimulateBuild(PackageName);
-			EditorSimulateModeParameters createParameters = new EditorSimulateModeParameters();
-			createParameters.EditorFileSystemParameters = FileSystemParameters.CreateDefaultEditorFileSystemParameters(buildResult.PackageRootDirectory);
-			initializationOperation = package.InitializeAsync(createParameters);
-		}
-		else
-		{
-			// 单机离线模式：读取包体内置资源
-			OfflinePlayModeParameters createParameters = new OfflinePlayModeParameters();
-			createParameters.BuildinFileSystemParameters = FileSystemParameters.CreateDefaultBuildinFileSystemParameters();
-			initializationOperation = package.InitializeAsync(createParameters);
-		}
+			InitializationOperation initializationOperation = package.InitializeAsync(CreateInitializeParameters());
+			yield return initializationOperation;
+			if (initializationOperation.Status == EOperationStatus.Succeed)
+			{
+				initialized = true;
+				break;
+			}
 
-		yield return initializationOperation;
-		if (initializationOperation.Status != EOperationStatus.Succeed)
+			UnityEngine.Debug.LogError($"YooAsset 初始化失败({i + 1}/{MaxInitRetryCount}) : {initializationOperation.Error}");
+			if (i + 1 < MaxInitRetryCount)
+				yield return new WaitForSeconds(1f);
+		}
+		if (initialized == false)
 		{
-			UnityEngine.Debug.LogError($"YooAsset 初始化失败 : {initializationOperation.Error}");
+			UnityEngine.Debug.LogError("YooAsset 初始化最终失败，游戏无法启动。请检查 StreamingAssets 内是否已构建资源包（Tools/YooAsset/构建 AssetBundle）。");
 			yield break;
 		}
 
@@ -175,6 +199,12 @@ public class GameLauncher : MonoBehaviour
 		// 创建对象池管理器
 		MotionEngine.CreateModule<GameObjectPoolManager>();
 
+		// 创建配表管理器（当前工程未使用配表，但保证 Instance 不为空，避免后续使用时踩空）
+		MotionEngine.CreateModule<ConfigManager>();
+
+		// 注意：WindowManager / AssemblyManager 当前工程未使用（UI 与热更由 GameScript 自行实现），
+		// 如需启用请在此处 CreateModule，不要直接访问它们的 Instance
+
 		// 初始化图集延迟绑定（必须在资源系统创建之后）
 		SpriteAtlasLoader.Initialize();
 
@@ -183,6 +213,26 @@ public class GameLauncher : MonoBehaviour
 
 		// 启动游戏业务逻辑
 		StartGameLogic();
+	}
+
+	/// <summary>
+	/// 创建资源系统初始化参数
+	/// </summary>
+	private InitializeParameters CreateInitializeParameters()
+	{
+		if (PlayMode == EPlayMode.EditorSimulateMode)
+		{
+			// 编辑器模拟模式：直接读取工程内资源
+			PackageInvokeBuildResult buildResult = EditorSimulateModeHelper.SimulateBuild(PackageName);
+			EditorSimulateModeParameters parameters = new EditorSimulateModeParameters();
+			parameters.EditorFileSystemParameters = FileSystemParameters.CreateDefaultEditorFileSystemParameters(buildResult.PackageRootDirectory);
+			return parameters;
+		}
+
+		// 单机离线模式：读取包体内置资源
+		OfflinePlayModeParameters offlineParameters = new OfflinePlayModeParameters();
+		offlineParameters.BuildinFileSystemParameters = FileSystemParameters.CreateDefaultBuildinFileSystemParameters();
+		return offlineParameters;
 	}
 
 	/// <summary>

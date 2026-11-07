@@ -31,14 +31,15 @@ namespace Hotfix
 
 			World = world;
 
-			// 创建Avatar
-			Avatar = new EntityAvatar(this, avatarID);
-			Avatar.Create(OnAvatarLoad);
-
-			// 创建游戏对象
+			// 先创建游戏对象：对象池命中时 Avatar 的加载回调是同步执行的，
+			// 回调里会访问 Root，必须先于资源请求创建
 			Root = new GameObject($"Entity{EntityID}");
 			Root.transform.position = pos;
 			Root.transform.rotation = Quaternion.Euler(rot);
+
+			// 创建Avatar
+			Avatar = new EntityAvatar(this, avatarID);
+			Avatar.Create(OnAvatarLoad);
 
 			OnCreate();
 		}

@@ -127,6 +127,24 @@ namespace MotionFramework.Scene
 			return false;
 		}
 
+		/// <summary>
+		/// 检测场景是否加载失败，如果场景不存在返回false
+		/// </summary>
+		public bool CheckSceneIsFailed(string location)
+		{
+			if (_mainScene != null)
+			{
+				if (_mainScene.Location == location)
+					return _mainScene.IsFailed;
+			}
+
+			AssetScene scene = TryGetAdditionScene(location);
+			if (scene != null)
+				return scene.IsFailed;
+
+			return false;
+		}
+
 
 		/// <summary>
 		/// 卸载所有附加场景

@@ -53,12 +53,25 @@ public static class GameUtility
 	/// </summary>
 	public static T BytesToStruct<T>(byte[] bytes, int offset = 0)
 	{
+		if (bytes == null)
+			throw new System.ArgumentNullException(nameof(bytes));
+
+		int structSize = Marshal.SizeOf(typeof(T));
+		if (offset < 0 || bytes.Length - offset < structSize)
+			throw new System.ArgumentOutOfRangeException(nameof(offset), $"字节数组长度不足：需要 {offset + structSize}，实际 {bytes.Length}");
+
 		GCHandle bytesHandle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
-		IntPtr bytesPtr = (IntPtr)(bytesHandle.AddrOfPinnedObject().ToInt32() + offset);
-		T structObject = (T)Marshal.PtrToStructure(bytesPtr, typeof(T));
-		if (bytesHandle.IsAllocated)
-			bytesHandle.Free();
-		return structObject;
+		try
+		{
+			// 使用 IntPtr.Add 而不是 ToInt32，避免 64 位平台上指针被截断
+			IntPtr bytesPtr = IntPtr.Add(bytesHandle.AddrOfPinnedObject(), offset);
+			return (T)Marshal.PtrToStructure(bytesPtr, typeof(T));
+		}
+		finally
+		{
+			if (bytesHandle.IsAllocated)
+				bytesHandle.Free();
+		}
 	}
 	#endregion
 

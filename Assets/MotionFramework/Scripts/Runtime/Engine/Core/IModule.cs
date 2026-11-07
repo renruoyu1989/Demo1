@@ -22,5 +22,13 @@ namespace MotionFramework
 		/// GUI绘制
 		/// </summary>
 		void OnGUI();
+
+		/// <summary>
+		/// 销毁模块
+		/// 默认空实现，需要清理资源的模块自行重写
+		/// </summary>
+		void OnDestroy()
+		{
+		}
 	}
 }

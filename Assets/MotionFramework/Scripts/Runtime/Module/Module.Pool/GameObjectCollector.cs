@@ -86,11 +86,29 @@ namespace MotionFramework.Pool
 		}
 		private void Handle_Completed(AssetHandle obj)
 		{
-			_cloneObject = _handle.InstantiateSync();
+			if (_handle != null)
+				_handle.Completed -= Handle_Completed;
 
-			// 如果加载失败，创建临时对象
+			_cloneObject = _handle != null ? _handle.InstantiateSync() : null;
+
+			// 加载失败：记录错误并通知所有等待者，不再用空物体兜底
+			// （空物体会把资源缺失的问题藏起来，还会按 Capacity 复制出一堆空壳占用内存）
 			if (_cloneObject == null)
-				_cloneObject = new GameObject(Location);
+			{
+				MotionLog.Error($"Failed to load pool asset : {Location}, status = {obj.Status}, error = {obj.LastError}");
+				if (_handle != null)
+				{
+					_handle.Release();
+					_handle = null;
+				}
+
+				for (int i = 0; i < _loadingSpawn.Count; i++)
+				{
+					_loadingSpawn[i].UserCallback?.Invoke(null);
+				}
+				_loadingSpawn.Clear();
+				return;
+			}
 
 			// 设置克隆对象
 			SetRestoreCloneObject(_cloneObject);
@@ -132,10 +150,12 @@ namespace MotionFramework.Pool
 			SpawnCount--;
 			spawn.IsSpawning = false;
 
-			// 注意：资源有可能还未加载完毕
-			if (spawn.Go != null)
-				SetRestoreCloneObject(spawn.Go);
+			// 注意：资源还没加载完时 Go 为空，此时不能入池，
+			// 否则后续 Spawn 会 Dequeue 到空对象并空引用
+			if (spawn.Go == null)
+				return;
 
+			SetRestoreCloneObject(spawn.Go);
 			_collector.Enqueue(spawn);
 		}
 
@@ -178,7 +198,11 @@ namespace MotionFramework.Pool
 		public void Destroy()
 		{
 			// 卸载资源对象
-			_handle.Release();
+			if (_handle != null)
+			{
+				_handle.Release();
+				_handle = null;
+			}
 
 			// 销毁克隆对象
 			if (_cloneObject != null)

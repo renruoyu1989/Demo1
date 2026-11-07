@@ -128,7 +128,12 @@ namespace MotionFramework.Config
 
 		public float GetProgress()
 		{
-            return loadNum * 1f / maxCfgNum;
+            // 没有配表时视为已完成，避免 0/0 得到 NaN
+            if (maxCfgNum <= 0)
+                return 1f;
+
+            float progress = loadNum * 1f / maxCfgNum;
+            return progress > 1f ? 1f : progress;
 		}
 
         public bool IsDone()

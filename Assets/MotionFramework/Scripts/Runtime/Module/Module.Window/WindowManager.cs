@@ -210,7 +210,8 @@ namespace MotionFramework.Window
 
 			window.InternalDestroy();
 			Pop(window);
-			OnSortWindowDepth(window);
+			// 注意：这里不能调用 OnSortWindowDepth，此时 window 已经出栈，
+			// 它内部的"同层互斥销毁"会把同层的其它窗口全部销毁
 			OnSetWindowVisible();
 		}
 
@@ -222,7 +223,6 @@ namespace MotionFramework.Window
 
 			window.InternalDestroy();
 			Pop(window);
-			OnSortWindowDepth(window);
 			OnSetWindowVisible();
 		}
 		/// <summary>
@@ -240,6 +240,16 @@ namespace MotionFramework.Window
 
 		private void OnWindowPrepare(UIWindow window)
 		{
+			// 资源加载失败：出栈并回收，避免留下永远准备不完的僵尸窗口
+			if (window.IsPrepare == false)
+			{
+				MotionLog.Error($"Window asset load failed, remove it from stack : {window.WindowName}");
+				Pop(window);
+				window.InternalDestroy();
+				OnSetWindowVisible();
+				return;
+			}
+
 			OnSortWindowDepth(window);
 			window.InternalCreate();
 			window.InternalRefresh();
@@ -261,13 +271,14 @@ namespace MotionFramework.Window
 				}
 			}
 
+			// 同层内按 1 递增，避免窗口数量超过层间距时与上一层深度冲突
 			int depth = layer;
 			for (int i = 0; i < _stack.Count; i++)
 			{
 				if (_stack[i].WindowLayer == layer)
 				{
 					_stack[i].Depth = depth;
-					depth += 100; //注意：每次递增100深度
+					depth += 1;
 				}
 			}
 		}
@@ -280,7 +291,9 @@ namespace MotionFramework.Window
 				if (isHideNext == false)
 				{
 					window.Visible = true;
-					if (window.IsPrepare && window.FullScreen)
+					// 全屏窗口即使资源还在加载中也应遮挡下层，
+					// 否则加载完成的瞬间下层窗口会突然被盖住，产生可见性跳变
+					if (window.FullScreen)
 						isHideNext = true;
 				}
 				else

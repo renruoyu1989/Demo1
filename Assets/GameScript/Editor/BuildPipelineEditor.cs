@@ -16,6 +16,15 @@ public static class BuildPipelineEditor
 	public static bool BuildAssetBundles()
 	{
 		BuildTarget buildTarget = EditorUserBuildSettings.activeBuildTarget;
+
+		// 构建会清空并覆盖 StreamingAssets 内的资源包，必须二次确认
+		if (EditorUtility.DisplayDialog("构建资源包",
+			$"将构建 {buildTarget} 平台的资源包，并清空覆盖 StreamingAssets 内已有内容。\n\n是否继续？",
+			"开始构建", "取消") == false)
+		{
+			return false;
+		}
+
 		Debug.Log($"[BuildPipelineEditor] 开始构建资源包，平台：{buildTarget}");
 
 		BuiltinBuildParameters buildParameters = new BuiltinBuildParameters();
@@ -25,7 +34,9 @@ public static class BuildPipelineEditor
 		buildParameters.BuildBundleType = (int)EBuildBundleType.AssetBundle;
 		buildParameters.BuildTarget = buildTarget;
 		buildParameters.PackageName = GameLauncher.PackageName;
-		buildParameters.PackageVersion = DateTime.Now.ToString("yyyy-MM-dd-HHmm");
+		// 版本号取 PlayerSettings 的版本（离线模式每次覆盖同一版本即可），
+		// 时间戳会让每次构建都变成全新版本，导致版本目录无限增长
+		buildParameters.PackageVersion = PlayerSettings.bundleVersion;
 		buildParameters.EnableSharePackRule = true;
 		buildParameters.VerifyBuildingResult = true;
 		buildParameters.FileNameStyle = EFileNameStyle.BundleName_HashName;

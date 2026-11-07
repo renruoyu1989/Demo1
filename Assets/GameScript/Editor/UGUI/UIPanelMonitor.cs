@@ -13,25 +13,32 @@ public class UIPanelMonitor : Editor
 	[InitializeOnLoadMethod]
 	static void StartInitializeOnLoadMethod()
 	{
-		// 监听Inspector的Apply事件
-		PrefabUtility.prefabInstanceUpdated = delegate (GameObject go)
-		{
-			UIManifest manifest = go.GetComponent<UIManifest>();
-			if (manifest != null)
-				manifest.Refresh();
-		};
+		// 注意：必须先解绑再绑定，避免关闭 Domain Reload 时重复订阅，也不能用 = 覆盖别人的监听
+		PrefabUtility.prefabInstanceUpdated -= OnPrefabInstanceUpdated;
+		PrefabUtility.prefabInstanceUpdated += OnPrefabInstanceUpdated;
 
 #if UNITY_2018_4_OR_NEWER
 		// 监听新的Prefab系统
+		PrefabStage.prefabSaving -= OnPrefabSaving;
 		PrefabStage.prefabSaving += OnPrefabSaving;
 #endif
+	}
+
+	static void OnPrefabInstanceUpdated(GameObject go)
+	{
+		if (go == null)
+			return;
+
+		UIManifest manifest = go.GetComponent<UIManifest>();
+		if (manifest != null)
+			manifest.Refresh();
 	}
 
 #if UNITY_2018_4_OR_NEWER
 	static void OnPrefabSaving(GameObject go)
 	{
 		PrefabStage stage = PrefabStageUtility.GetCurrentPrefabStage();
-		if(stage != null)
+		if (stage != null && go != null)
 		{
 			UIManifest manifest = go.GetComponent<UIManifest>();
 			if (manifest != null)
@@ -40,18 +47,3 @@ public class UIPanelMonitor : Editor
 	}
 #endif
 }
-
-/*
-public class TestAssets : UnityEditor.AssetModificationProcessor
-{
-	static string[] OnWillSaveAssets(string[] paths)
-	{
-		foreach(var path in paths)
-		{
-			Debug.Log(path);
-		}
-
-		return paths;
-	}
-}
-*/

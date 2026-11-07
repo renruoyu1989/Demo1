@@ -55,6 +55,13 @@ namespace Hotfix
 				UpdateLoadingText(_count);
 			}
 
+			if (SceneManager.Instance.CheckSceneIsFailed(_sceneName))
+			{
+				HotfixLogger.Error($"场景加载失败 : {_sceneName}");
+				UIManager.Instance.CloseWindow(EWindowType.UILoading);
+				return;
+			}
+
 			if (SceneManager.Instance.CheckSceneIsDone(_sceneName))
 			{
 				// 延迟关闭加载窗口

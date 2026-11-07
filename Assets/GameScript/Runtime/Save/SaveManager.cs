@@ -169,8 +169,16 @@ public static class SaveManager
 
 			if (envelope.Version != CurrentVersion)
 			{
+				// 先备份旧档，迁移失败时数据仍可人工恢复
+				TryBackup(filePath);
+
 				if (OnVersionMismatch != null)
 					OnVersionMismatch.Invoke(slot, envelope.Version, CurrentVersion);
+
+				// 版本不一致视为读取失败：交由上层使用默认数据，
+				// 否则缺字段会被 JsonUtility 静默填成默认值，等于悄悄丢进度
+				Debug.LogWarning($"Save file version mismatch, fallback to default data. Slot : {slot}, File : {envelope.Version}, Program : {CurrentVersion}");
+				return false;
 			}
 
 			payload = envelope.Payload;
@@ -238,6 +246,24 @@ public static class SaveManager
 	}
 
 	#region 内部实现
+	/// <summary>
+	/// 尝试把存档文件复制一份为 .bak（失败只记录日志，不阻断流程）
+	/// </summary>
+	private static void TryBackup(string filePath)
+	{
+		try
+		{
+			string backupPath = filePath + BackupExtension;
+			if (File.Exists(backupPath))
+				File.Delete(backupPath);
+			File.Copy(filePath, backupPath, true);
+		}
+		catch (Exception ex)
+		{
+			Debug.LogError($"Failed to backup save file. Path : {filePath}, Error : {ex}");
+		}
+	}
+
 	private static bool WriteFile(string filePath, string content)
 	{
 		string directory = Path.GetDirectoryName(filePath);
@@ -263,10 +289,19 @@ public static class SaveManager
 				}
 				catch (Exception)
 				{
-					// 部分平台不支持File.Replace，退化为覆盖写入
-					File.Copy(tempPath, filePath, true);
-					File.Delete(tempPath);
-					File.Copy(filePath, backupPath, true);
+					// 部分平台不支持 File.Replace，退化为两次改名（都是原子操作）
+					// 注意：绝不能用 File.Copy 覆盖正式档，否则写一半断电会同时毁掉新旧两代存档
+					File.Move(filePath, backupPath);
+					try
+					{
+						File.Move(tempPath, filePath);
+					}
+					catch
+					{
+						// 回滚，保证至少存在一份可用存档
+						File.Move(backupPath, filePath);
+						throw;
+					}
 				}
 			}
 			else

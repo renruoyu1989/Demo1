@@ -13,6 +13,12 @@ namespace Hotfix
 		public const int SHOW_LAYER = 5; // UI
 
 		private AssetHandle _handle;
+		private bool _isDestroyed;
+
+		/// <summary>
+		/// 资源加载是否失败（失败后由 UIManager 负责出栈）
+		/// </summary>
+		internal bool IsFailed { get; private set; }
 		private UIManifest _manifest;
 		private Canvas _canvas;
 		private Canvas[] _childCanvas;
@@ -184,6 +190,11 @@ namespace Hotfix
 		}
 		internal void InternalDestroy()
 		{
+			// 注销异步回调，避免加载完成后继续实例化已经销毁的窗口
+			if (_handle != null)
+				_handle.Completed -= Handle_Completed;
+			_isDestroyed = true;
+
 			// 虚函数
 			if (IsPrepare)
 			{
@@ -194,9 +205,11 @@ namespace Hotfix
 			// 注销回调函数
 			_callback = null;
 
-			// 销毁面板对象
+			// 销毁面板对象（先隐藏并摘下，避免句柄释放后仍在渲染）
 			if (Go != null)
 			{
+				Go.SetActive(false);
+				Go.transform.SetParent(null);
 				GameObject.Destroy(Go);
 				Go = null;
 			}
@@ -217,10 +230,21 @@ namespace Hotfix
 		}
 		private void Handle_Completed(AssetHandle obj)
 		{
-			if (_handle.AssetObject == null)
+			if (_isDestroyed)
 				return;
 
+			if (obj.Status != EOperationStatus.Succeed || _handle == null || _handle.AssetObject == null)
+			{
+				FailLoad($"Load window asset failed : {WindowType}, status = {obj.Status}");
+				return;
+			}
+
 			Go = _handle.InstantiateSync();
+			if (Go == null)
+			{
+				FailLoad($"Instantiate window failed : {WindowType}");
+				return;
+			}
 			
 			// 设置父类
 			GameObject uiDesktop = UIManager.Instance.GetUIDesktop();
@@ -230,7 +254,7 @@ namespace Hotfix
 			_manifest = Go.GetComponent<UIManifest>();
 			if (_manifest == null)
 			{
-				HotfixLogger.Error($"Not found {nameof(UIManifest)} in window {WindowType}");
+				FailLoad($"Not found {nameof(UIManifest)} in window {WindowType}");
 				return;
 			}
 
@@ -238,7 +262,7 @@ namespace Hotfix
 			_canvas = Go.GetComponent<Canvas>();
 			if (_canvas == null)
 			{
-				HotfixLogger.Error($"Not found {nameof(Canvas)} in window {WindowType}");
+				FailLoad($"Not found {nameof(Canvas)} in window {WindowType}");
 				return;
 			}
 			_canvas.overrideSorting = true;
@@ -247,7 +271,7 @@ namespace Hotfix
 			_raycaster = Go.GetComponent<GraphicRaycaster>();
 			if (_raycaster == null)
 			{
-				HotfixLogger.Error($"Not found {nameof(GraphicRaycaster)} in window {WindowType}");
+				FailLoad($"Not found {nameof(GraphicRaycaster)} in window {WindowType}");
 				return;
 			}
 
@@ -267,6 +291,32 @@ namespace Hotfix
 
 			// 通知UI管理器
 			_callback?.Invoke(this);
+		}
+
+		/// <summary>
+		/// 加载失败：清理已创建的对象与资源，并通知 UIManager 出栈
+		/// </summary>
+		private void FailLoad(string message)
+		{
+			HotfixLogger.Error(message);
+			IsFailed = true;
+
+			if (Go != null)
+			{
+				GameObject.Destroy(Go);
+				Go = null;
+			}
+
+			if (_handle != null)
+			{
+				_handle.Completed -= Handle_Completed;
+				_handle.Release();
+				_handle = null;
+			}
+
+			System.Action<UIWindow> callback = _callback;
+			_callback = null;
+			callback?.Invoke(this);
 		}
 
 		#region UI组件相关

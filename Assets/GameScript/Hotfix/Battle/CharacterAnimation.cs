@@ -10,7 +10,7 @@ namespace Hotfix
 		public enum EAnimationLayer
 		{
 			DefaultLayer = 1, //默认层级
-			SkillLayer = 1, //技能层级
+			SkillLayer = 2, //技能层级（必须与默认层不同，否则 StopSameLayer 会打断待机动作）
 			StateLayer = 3, //状态层级
 			BornLayer = 8, //出生层级
 			DeadLayer = 9, //死亡层级

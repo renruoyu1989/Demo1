@@ -9,18 +9,18 @@ public abstract class AssetXml
 {
 	private AssetHandle _handle;
 	private System.Action _userCallback;
+	private bool _isLoading;
 	protected SecurityElement _xml;
 
 	/// <summary>
-	/// 是否完成
+	/// 是否已加载完成（无论成功失败）
 	/// </summary>
-	public bool IsDone
-	{
-		get
-		{
-			return _handle != null && _handle.IsDone;
-		}
-	}
+	public bool IsDone { get; private set; }
+
+	/// <summary>
+	/// 是否加载失败
+	/// </summary>
+	public bool IsFailed { get; private set; }
 
 	/// <summary>
 	/// 资源地址
@@ -34,17 +34,38 @@ public abstract class AssetXml
 	}
 	public void Load(System.Action callback)
 	{
-		if (_userCallback != null)
+		// 已经加载完成，直接回调（避免调用方永久等待）
+		if (IsDone)
+		{
+			callback?.Invoke();
 			return;
+		}
 
+		// 加载中，追加回调而不是丢弃
+		if (_isLoading)
+		{
+			_userCallback += callback;
+			return;
+		}
+
+		_isLoading = true;
 		_userCallback = callback;
 		_handle = YooAssets.LoadAssetAsync<TextAsset>(Location);
 		_handle.Completed += Handle_Completed;
 	}
+
 	private void Handle_Completed(AssetHandle obj)
 	{
-		TextAsset temp = _handle.AssetObject as TextAsset;
-		if (temp != null)
+		if (_handle != null)
+			_handle.Completed -= Handle_Completed;
+
+		TextAsset temp = (_handle != null && obj.Status == EOperationStatus.Succeed) ? _handle.AssetObject as TextAsset : null;
+		if (temp == null)
+		{
+			IsFailed = true;
+			Debug.LogError($"Failed to load xml {Location}. Status : {obj.Status}");
+		}
+		else
 		{
 			try
 			{
@@ -69,7 +90,13 @@ public abstract class AssetXml
 			_handle = null;
 		}
 
-		_userCallback?.Invoke();
+		IsDone = true;
+		_isLoading = false;
+
+		// 取出并清空回调，避免回调内再次 Load 时被复用
+		System.Action callback = _userCallback;
+		_userCallback = null;
+		callback?.Invoke();
 	}
 
 	/// <summary>

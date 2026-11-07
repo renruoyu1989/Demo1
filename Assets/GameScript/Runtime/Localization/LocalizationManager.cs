@@ -56,18 +56,21 @@ public static class LocalizationManager
 	/// 初始化
 	/// 注意：必须在资源系统创建完毕之后调用
 	/// </summary>
-	public static void Initialize()
+	public static bool Initialize()
 	{
 		if (_isInitialized)
-			return;
+			return true;
 
 		if (LoadTable() == false)
 		{
+			// 失败时不置位初始化标记：资源系统就绪后可以重试，避免整局界面显示 key
 			Debug.LogError($"Failed to load localization table : {TableLocation}");
+			return false;
 		}
 
 		Language = LoadSavedLanguage();
 		_isInitialized = true;
+		return true;
 	}
 
 	/// <summary>

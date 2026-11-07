@@ -51,7 +51,7 @@ namespace MotionFramework.Window
 		/// <summary>
 		/// 是否加载完毕
 		/// </summary>
-		public bool IsDone { get { return _handle.IsDone; } }
+		public bool IsDone { get { return _handle != null && _handle.IsDone; } }
 
 		/// <summary>
 		/// 是否准备完毕
@@ -120,6 +120,10 @@ namespace MotionFramework.Window
 			// 注销回调函数
 			_prepareCallback = null;
 
+			// 解绑异步回调，避免加载完成后继续实例化已销毁的窗口
+			if (_handle != null)
+				_handle.Completed -= Handle_Completed;
+
 			// 销毁面板对象
 			IsCreate = false;
 			if (Go != null)
@@ -138,8 +142,21 @@ namespace MotionFramework.Window
 
 		private void Handle_Completed(AssetHandle obj)
 		{
-			if (_handle.AssetObject == null)
+			if (obj.Status != EOperationStatus.Succeed || _handle == null || _handle.AssetObject == null)
+			{
+				MotionLog.Error($"Failed to load window asset : {WindowName}, status = {obj.Status}");
+				_isLoadAsset = false;
+				if (_handle != null)
+				{
+					_handle.Completed -= Handle_Completed;
+					_handle.Release();
+					_handle = null;
+				}
+
+				// 通知管理器，由管理器负责出栈与回收
+				_prepareCallback?.Invoke(this);
 				return;
+			}
 
 			// 实例化对象
 			Go = _handle.InstantiateSync();

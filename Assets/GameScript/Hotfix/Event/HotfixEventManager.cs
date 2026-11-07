@@ -62,10 +62,12 @@ namespace Hotfix
 				return;
 			}
 
+			// 快照遍历：监听者可能在回调里移除/新增监听，直接遍历原列表会跳过后续监听
 			List<Action<IHotfixEventMessage>> listeners = _handlers[eventTag];
-			for (int i = 0; i < listeners.Count; i++)
+			Action<IHotfixEventMessage>[] snapshot = listeners.ToArray();
+			for (int i = 0; i < snapshot.Length; i++)
 			{
-				listeners[i].Invoke(msg);
+				snapshot[i]?.Invoke(msg);
 			}
 		}
 	}

@@ -20,7 +20,7 @@ namespace MotionFramework.Window
 		/// <summary>
 		/// 是否加载完毕
 		/// </summary>
-		public bool IsDone { get { return _handle.IsDone; } }
+		public bool IsDone { get { return _handle != null && _handle.IsDone; } }
 
 		/// <summary>
 		/// 是否准备完毕
@@ -49,18 +49,33 @@ namespace MotionFramework.Window
 		}
 		internal void InternalDestroy()
 		{
+			if (_handle != null)
+			{
+				_handle.Completed -= Handle_Completed;
+				_handle.Release();
+				_handle = null;
+			}
+
 			if (Go != null)
 			{
 				GameObject.Destroy(Go);
 				Go = null;
 			}
-
-			_handle.Release();
 		}
 		private void Handle_Completed(AssetHandle obj)
 		{
-			if (_handle.AssetObject == null)
+			if (obj.Status != EOperationStatus.Succeed || _handle == null || _handle.AssetObject == null)
+			{
+				MotionLog.Error($"Failed to load UIRoot asset, status = {obj.Status}");
+				_isLoadAsset = false;
+				if (_handle != null)
+				{
+					_handle.Completed -= Handle_Completed;
+					_handle.Release();
+					_handle = null;
+				}
 				return;
+			}
 
 			// 实例化对象
 			Go = _handle.InstantiateSync();

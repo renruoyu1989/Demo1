@@ -22,6 +22,7 @@ namespace Hotfix
 		/// 之前运行状态
 		/// </summary>
 		private HotfixFsmState _preState;
+		private bool _isChanging;
 
 
 		/// <summary>
@@ -52,7 +53,7 @@ namespace Hotfix
 		public void Run(EHotfixStateType runStateType)
 		{
 			_runState = GetState(runStateType);
-			_preState = GetState(runStateType);
+			_preState = null;
 
 			if (_runState != null)
 				_runState.Enter();
@@ -101,6 +102,13 @@ namespace Hotfix
 		/// </summary>
 		public void ChangeState(EHotfixStateType stateType)
 		{
+			// 重入保护：状态的 Exit/Enter 里可能再次请求切换状态
+			if (_isChanging)
+			{
+				HotfixLogger.Error($"ChangeState is busy, request {stateType} is ignored.");
+				return;
+			}
+
 			HotfixFsmState state = GetState(stateType);
 			if (state == null)
 			{
@@ -108,11 +116,23 @@ namespace Hotfix
 				return;
 			}
 
-			HotfixLogger.Log($"Change state {_runState} to {state}");
-			_preState = _runState;
-			_runState.Exit();
-			_runState = state;
-			_runState.Enter();
+			// 同状态不重复切换
+			if (_runState == state)
+				return;
+
+			_isChanging = true;
+			try
+			{
+				HotfixLogger.Log($"Change state {_runState} to {state}");
+				_preState = _runState;
+				_runState?.Exit();
+				_runState = state;
+				_runState.Enter();
+			}
+			finally
+			{
+				_isChanging = false;
+			}
 		}
 
 		/// <summary>

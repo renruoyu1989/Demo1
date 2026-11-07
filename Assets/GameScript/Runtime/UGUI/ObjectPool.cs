@@ -49,7 +49,9 @@ namespace UnityEngine.UI
 		/// </summary>
 		public void Release(T element)
 		{
-			if (_stack.Count > 0 && ReferenceEquals(_stack.Peek(), element))
+			// 注意：不能只比较栈顶，否则"释放 A → 释放 B → 再释放 A"会把 A 重复压栈，
+			// 之后两个调用方会拿到同一个对象
+			if (_stack.Contains(element))
 				throw new System.Exception("Internal error. Trying to destroy object that is already released to pool.");
 
 			_actionOnRelease?.Invoke(element);

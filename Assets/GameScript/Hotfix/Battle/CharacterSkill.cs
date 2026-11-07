@@ -27,21 +27,41 @@ namespace Hotfix
 				}
 			}
 
+			/// <summary>
+			/// 配置是否有效（缺配置时不参与战斗逻辑，避免空引用崩溃）
+			/// </summary>
+			public bool IsValid { get; private set; } = true;
+
 			public Skill(EntityCharacter owner, int skillID)
 			{
 				_owner = owner;
 				_skillTable = CfgSkill.Instance.GetCfgTab(skillID);
+				if (_skillTable == null)
+				{
+					IsValid = false;
+					HotfixLogger.Error($"技能配置缺失 : {skillID}");
+					return;
+				}
+
 				_delayTimer = Timer.CreateOnceTimer(_skillTable.Delay);
 
 				// 初始化技能动画
 				if (_skillTable.AnimationID > 0)
 				{
 					_animTable = CfgAnimation.Instance.GetCfgTab(_skillTable.AnimationID);
+					if (_animTable == null)
+					{
+						HotfixLogger.Error($"技能动画配置缺失 : {_skillTable.AnimationID}, skill : {skillID}");
+						return;
+					}
 					_owner.CharAnim.InitAnimState(_animTable.AnimName, CharacterAnimation.EAnimationLayer.SkillLayer, (WrapMode)_animTable.AnimMode);
 				}
 			}
 			public void Update(float deltaTime)
 			{
+				if (IsValid == false)
+					return;
+
 				_cdTimer -= deltaTime;
 
 				if (_isSpelling == false)
@@ -63,6 +83,9 @@ namespace Hotfix
 
 			public void Spell()
 			{
+				if (IsValid == false)
+					return;
+
 				_isSpelling = true;
 				_cdTimer = _skillTable.Cd;
 
@@ -90,10 +113,14 @@ namespace Hotfix
 			}
 			public bool CheckCD()
 			{
+				if (IsValid == false)
+					return true;
 				return _cdTimer > 0.001f;
 			}
 			public bool CheckMP()
 			{
+				if (IsValid == false)
+					return false;
 				return _owner.CharData.MP >= _skillTable.Mp;
 			}
 			public bool IsLife()
@@ -128,6 +155,8 @@ namespace Hotfix
 			if (skill == null)
 			{
 				skill = new Skill(_owner, skillID);
+				if (skill.IsValid == false)
+					return;
 				_skills.Add(skill);
 			}
 

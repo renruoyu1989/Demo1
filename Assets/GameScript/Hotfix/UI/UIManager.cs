@@ -31,13 +31,13 @@ namespace Hotfix
 		}
 		public void Update()
 		{
-			// 更新窗口
-			int count = _stack.Count;
-			for (int i = 0; i < _stack.Count; i++)
+			// 快照遍历：窗口在 Update 期间可能打开/关闭窗口，直接遍历原列表会索引错位
+			UIWindow[] snapshot = _stack.ToArray();
+			for (int i = 0; i < snapshot.Length; i++)
 			{
-				if (_stack.Count != count)
-					break;
-				UIWindow window = _stack[i];
+				UIWindow window = snapshot[i];
+				if (window == null || _stack.Contains(window) == false)
+					continue;
 				if (window.IsPrepare && window.IsOpen)
 					window.InternalUpdate();
 			}
@@ -137,6 +137,16 @@ namespace Hotfix
 		}
 
 		/// <summary>
+		/// 窗口资源加载失败时的兜底处理
+		/// </summary>
+		private void OnWindowLoadFailed(UIWindow window)
+		{
+			HotfixLogger.Error($"Window load failed, remove it from stack : {window.WindowType}");
+			Pop(window);
+			window.InternalDestroy();
+		}
+
+		/// <summary>
 		/// 关闭窗口
 		/// </summary>
 		/// <param name="type">窗口类型</param>
@@ -205,15 +215,54 @@ namespace Hotfix
 		}
 		private void Handle_Completed(AssetHandle obj)
 		{
+			if (obj.Status != EOperationStatus.Succeed || _handle == null || _handle.AssetObject == null)
+			{
+				HotfixLogger.Error($"加载 UIRoot 失败 : {obj.Status} {obj.LastError}");
+				if (_handle != null)
+				{
+					_handle.Release();
+					_handle = null;
+				}
+				return;
+			}
+
 			_uiRoot = _handle.InstantiateSync();
-			_uiDesktop = _uiRoot.transform.BFSearch("UIDesktop").gameObject;
-			_uiCamera = _uiRoot.transform.BFSearch("UICamera").GetComponent<Camera>();
+			if (_uiRoot == null)
+			{
+				HotfixLogger.Error("实例化 UIRoot 失败");
+				_handle.Release();
+				_handle = null;
+				return;
+			}
+
+			// 节点查找失败时给出明确错误，而不是直接空引用
+			Transform desktop = _uiRoot.transform.BFSearch("UIDesktop");
+			Transform cameraTrans = _uiRoot.transform.BFSearch("UICamera");
+			if (desktop == null || cameraTrans == null)
+			{
+				HotfixLogger.Error("UIRoot 预制体缺少 UIDesktop 或 UICamera 节点");
+				GameObject.Destroy(_uiRoot);
+				_uiRoot = null;
+				_handle.Release();
+				_handle = null;
+				return;
+			}
+
+			_uiDesktop = desktop.gameObject;
+			_uiCamera = cameraTrans.GetComponent<Camera>();
 			GameObject.DontDestroyOnLoad(_uiRoot);
 		}
 
 		// 准备完毕
 		private void OnWindowPrepare(UIWindow window)
 		{
+			// 资源加载失败：出栈并回收，避免留下僵尸窗口
+			if (window.IsFailed)
+			{
+				OnWindowLoadFailed(window);
+				return;
+			}
+
 			// 把内置字体替换成支持中文的字体
 			UIFontProvider.ApplyFont(window.Go);
 

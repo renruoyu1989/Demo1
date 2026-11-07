@@ -184,12 +184,13 @@ namespace MotionFramework.IO
 		#endregion
 
 		#region 读取操作
-		[Conditional("DEBUG")]
+		// 注意：配表数据来自外部文件，Release 包同样需要边界校验，
+		// 否则错误数据会静默读到越界内存或产生脏数据
 		private void CheckReaderIndex(int length)
 		{
-			if (_readerIndex + length > _writerIndex)
+			if (length < 0 || _readerIndex + length > _writerIndex)
 			{
-				throw new IndexOutOfRangeException();
+				throw new IndexOutOfRangeException($"Read out of range. Index : {_readerIndex}, Length : {length}, Capacity : {_writerIndex}");
 			}
 		}
 

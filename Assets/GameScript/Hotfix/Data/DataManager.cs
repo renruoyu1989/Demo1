@@ -52,16 +52,10 @@ namespace Hotfix
 		}
 		public void Start()
 		{
-			// 创建所有数据类
-			foreach (int v in System.Enum.GetValues(typeof(EDataType)))
-			{
-				string name = System.Enum.GetName(typeof(EDataType), v);
-				System.Type type = HotfixTypeHelper.GetType(name);
-				if (type == null)
-					throw new System.Exception($"Not found class {name}");
-				DataBase instance = (DataBase)System.Activator.CreateInstance(type);
-				_allDatas.Add(instance);
-			}
+			// 显式注册所有数据类
+			// 注意：不要用枚举名反射创建，那样类名/命名空间任何一处改动都会变成运行时异常
+			_allDatas.Add(new DataLogin());
+			_allDatas.Add(new DataPlayer());
 
 			// 先载入存档，再初始化数据类
 			LoadAll();
