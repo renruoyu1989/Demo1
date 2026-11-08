@@ -45,6 +45,15 @@ namespace Hotfix
 		}
 		public override void OnUpdate()
 		{
+			// 单场景启动时没有场景名（启动流程不经过场景加载），直接按加载完成处理，
+			// 否则会一直查不到场景而卡在加载界面
+			if (string.IsNullOrEmpty(_sceneName))
+			{
+				if (_hideTimer.Update(Time.deltaTime))
+					WindowManager.Instance.CloseWindow<UILoading>();
+				return;
+			}
+
 			if (_repeater.Update(Time.deltaTime))
 			{
 				int progress = SceneManager.Instance.GetSceneLoadProgress(_sceneName);
