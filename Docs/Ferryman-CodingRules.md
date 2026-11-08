@@ -15,16 +15,17 @@ View  →  Core  →  Data
   `Assets/GameScript/Editor/Validation/FerryLayeringValidator.cs` 会在编译前扫描并报错。
 - `View/**` 可以引用 `UnityEngine`，但**不允许**直接改逻辑层状态，只能读 `FerryGameSession`。
 - `UI/**` 只读数据 + 发意图 + 订阅事件，所有玩法操作必须走 `FerryGameCommands`。
-- 启动层与业务层同属 `Script` 程序集；新增窗口必须在 `UIManager` 的 `_registry` 静态表登记，
-  漏登记会在打开窗口时直接报 `KeyNotFoundException`，不会静默失效。分层靠目录约定 + 校验脚本保障。
+- 启动层与业务层同属 `Script` 程序集；窗口与数据分别由框架的 `WindowManager` / `DataManager` 管理，
+  新增窗口打 `[Window]` 特性、新增数据类打 `[Data]` 特性即可被自动收集，不需要手工登记表。
+  分层靠目录约定 + 校验脚本保障。
 
 ## 2. 窗口
 
 沿用框架五步，缺一不可：
 
-1. `Assets/GameRes/UIPanel/<EWindowType 名>.prefab`：根挂 `Canvas + GraphicRaycaster + UIManifest`；
-2. `UI/EWindowType.cs` 加枚举；
-3. 在 `UIManager._registry` 注册窗口构造器与 `EWindowLayer`；
+1. `Assets/GameRes/UIPanel/<窗口类名>.prefab`：根挂 `Canvas + GraphicRaycaster + UIManifest`；
+2. 窗口类继承 `WindowBase`，类名必须与 prefab 同名（YooAsset 按类名拼路径）；
+3. 类上打 `[Window((int)EWindowLayer.Xxx, fullScreen)]`，`WindowManager` 反射收集，不需要登记表；
 4. 控件在 `OnCreate()` 用 `FerryUIBuilder` 生成（prefab 只留结构，避免节点路径漂移）；
 5. `UIManifest` 自动刷新，收集器已包含该目录。
 
@@ -67,6 +68,19 @@ View  →  Core  →  Data
 
 ## 6. 资源与日志
 
+**目录约定**（旧 demo 的 `Assets/GameArt`、`GameRes/Audio|Entity|UITexture` 已全部删除，不要再往里放东西）：
+
+| 位置 | 内容 |
+|---|---|
+| `Assets/GameRes/Ferryman/Entity/` | 棋子、场景、船、UI 散图（png，文件名被 `board.json` 引用，改名要同步改 json） |
+| `Assets/GameRes/Ferryman/Audio/` | 玩法音效（wav），`FerryAudio` 以 `Ferryman/Audio/{name}` 播放 |
+| `Assets/GameRes/Ferryman/Data/board.json` | 大图帧矩形、`sceneAnims`、`hero` |
+| `Assets/GameRes/Ferryman/UI/Loading/` | 加载界面进度帧源图（被 `UIAtlas/UILoading.spriteatlas` 收集） |
+| `Assets/GameRes/UIAtlas/UILoading.spriteatlas` | 目前唯一保留的图集（加载界面） |
+| `Assets/GameRes/UIPanel/` | 窗口预制体，命名必须与窗口类名一致 |
+| `Assets/GameRes/Scene/Launcher.unity` | 唯一启动场景 |
+| `Assets/GameRes/Config/Localization.csv` | 运行时多语言表 |
+
 - YooAsset 全路径寻址：`Assets/GameRes/Ferryman/Entity/...`（不带扩展名）。
   单关 sheet 按需加载，切关 `handle.Release()`；切帧结果缓存 `Sprite[]`，禁止逐帧 `Sprite.Create`。
 - 只用 `HotfixLogger`，禁止 `Debug.Log`；关卡加载 / 规则求值失败必须带关卡 id 与资源 key。
@@ -79,6 +93,5 @@ View  →  Core  →  Data
 驱动 `FerryGameFlow.Tick()` 与 `FerryBoardView.Tick()`；视图不写自己的 `Update`。
 `UIWindow.OnUpdate()` 只做刷新文本，不做玩法推进。
 
-改动 `EWindowType` / `EHotfixStateType` / `HotfixMain.AddState` / `DataManager.Start()` /
-`HotfixEventMessageDefine` / `AssetBundleCollectorSetting.asset` 时必须同批改完，
-漏一处会编译失败或运行期 `KeyNotFoundException`。
+改动 `EHotfixStateType` / `HotfixMain.Start` 的状态注册 / `[Window]` 层级 / `[Data]` 数据类 /
+`HotfixEventMessageDefine` / `AssetBundleCollectorSetting.asset` 时必须同批改完。
