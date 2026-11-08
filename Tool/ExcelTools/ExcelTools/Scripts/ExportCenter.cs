@@ -38,19 +38,6 @@ public static class ExportCenter
 	}
 
 	/// <summary>
-	/// 命令行入口
-	/// </summary>
-	public static void RunCommand(CommandLineOptions options)
-	{
-		// 初始化配置
-		ExportConfig.Instance.Init(options);
-		SettingConfig.Instance.Init();
-
-		// 导出Excel文件列表
-		Export(GetExcelFileList(ExportConfig.Instance.ExcelPath));
-	}
-
-	/// <summary>
 	/// 获取表格目录下所有可导出的Excel文件
 	/// （多语言总表是导出产物，不参与导出）
 	/// </summary>

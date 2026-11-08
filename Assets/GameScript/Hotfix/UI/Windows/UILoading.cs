@@ -6,10 +6,12 @@ using UnityEngine.UI;
 using MotionFramework.Scene;
 using MotionFramework.Utility;
 
+using MotionFramework.Window;
+
 namespace Hotfix
 {
-	[Window(EWindowType.UILoading, EWindowLayer.Loading)]
-	public class UILoading : UIWindow
+	[Window((int)EWindowLayer.Loading, true)]
+	public class UILoading : WindowBase
 	{
 		private UISprite _progress;
 		private Text _loadingTxt;
@@ -22,7 +24,6 @@ namespace Hotfix
 
 		public UILoading()
 		{
-			FullScreen = true;
 			DontDestroy = true;
 		}
 		public override void OnCreate()
@@ -58,7 +59,7 @@ namespace Hotfix
 			if (SceneManager.Instance.CheckSceneIsFailed(_sceneName))
 			{
 				HotfixLogger.Error($"场景加载失败 : {_sceneName}");
-				UIManager.Instance.CloseWindow(EWindowType.UILoading);
+				WindowManager.Instance.CloseWindow<UILoading>();
 				return;
 			}
 
@@ -66,7 +67,7 @@ namespace Hotfix
 			{
 				// 延迟关闭加载窗口
 				if (_hideTimer.Update(Time.deltaTime))
-					UIManager.Instance.CloseWindow(EWindowType.UILoading);
+					WindowManager.Instance.CloseWindow<UILoading>();
 			}
 		}
 

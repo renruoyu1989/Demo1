@@ -6,6 +6,9 @@ namespace MotionFramework.Config
 {
     /// <summary>
     /// 配表管理器
+    /// 支持两种配表来源：
+    /// 1. 二进制配表资源（AssetConfig + LoadConfig，原版流程）
+    /// 2. 导表工具直接生成的 C# 配表类（由业务层 Register 注册）
     /// </summary>
     public sealed class ConfigManager : ModuleSingleton<ConfigManager>, IModule, IProgress
     {
@@ -20,19 +23,21 @@ namespace MotionFramework.Config
             }
         }
 
+        /// <summary>
+        /// 二进制配表集合（以类型全名为键）
+        /// </summary>
         private readonly Dictionary<string, AssetConfig> _configs = new Dictionary<string, AssetConfig>();
 
         /// <summary>
-        /// 反射服务接口
+        /// 代码生成配表集合（以类型为键）
         /// </summary>
-        public IActivatorServices ActivatorServices { get; set; }
+        private readonly Dictionary<Type, object> _generatedConfigs = new Dictionary<Type, object>();
 
         private int maxCfgNum;
         private int loadNum;
 
         void IModule.OnCreate(System.Object param)
         {
-
         }
 
         void IModule.OnUpdate()
@@ -43,6 +48,52 @@ namespace MotionFramework.Config
         {
         }
 
+        #region 代码生成配表
+        /// <summary>
+        /// 注册一个代码生成的配表对象
+        /// </summary>
+        public void Register(object config)
+        {
+            if (config == null)
+            {
+                MotionLog.Error("Config is null.");
+                return;
+            }
+
+            Type type = config.GetType();
+            if (_generatedConfigs.ContainsKey(type))
+            {
+                MotionLog.Warning($"Config {type.FullName} is already registered.");
+                return;
+            }
+
+            _generatedConfigs.Add(type, config);
+        }
+
+        /// <summary>
+        /// 获取代码生成的配表
+        /// </summary>
+        public T GetGeneratedConfig<T>() where T : class
+        {
+            object config;
+            if (_generatedConfigs.TryGetValue(typeof(T), out config))
+                return config as T;
+
+            MotionLog.Error($"Not found config {typeof(T).FullName}");
+            return null;
+        }
+        public object GetGeneratedConfig(Type configType)
+        {
+            object config;
+            if (_generatedConfigs.TryGetValue(configType, out config))
+                return config;
+
+            MotionLog.Error($"Not found config {configType.FullName}");
+            return null;
+        }
+        #endregion
+
+        #region 二进制配表
         /// <summary>
         /// 按照列表顺序批量加载配表
         /// </summary>
@@ -72,15 +123,11 @@ namespace MotionFramework.Config
                 return null;
             }
 
-            AssetConfig config;
-            if (ActivatorServices != null)
-                config = ActivatorServices.CreateInstance(configType) as AssetConfig;
-            else
-                config = Activator.CreateInstance(configType) as AssetConfig;
-
+            // 注意：配表类通常是私有构造，需要用非公开构造创建
+            AssetConfig config = Activator.CreateInstance(configType, true) as AssetConfig;
             if (config == null)
             {
-                MotionLog.Error($"Config {configName} create instance  failed.");
+                MotionLog.Error($"Config {configName} create instance failed.");
             }
             else
             {
@@ -101,15 +148,7 @@ namespace MotionFramework.Config
 
         public AssetConfig GetConfig(Type configType)
         {
-            string configName = configType.FullName;
-            foreach (var pair in _configs)
-            {
-                if (pair.Key == configName)
-                    return pair.Value;
-            }
-
-            MotionLog.Error($"Not found config {configName}");
-            return null;
+            return GetConfig(configType.FullName);
         }
 
         /// <summary>
@@ -117,28 +156,28 @@ namespace MotionFramework.Config
         /// </summary>
         public AssetConfig GetConfig(string configName)
         {
-            if (_configs.ContainsKey(configName))
-            {
-                return _configs[configName];
-            }
+            AssetConfig config;
+            if (_configs.TryGetValue(configName, out config))
+                return config;
 
             MotionLog.Error($"Not found config {configName}");
             return null;
         }
 
-		public float GetProgress()
-		{
+        public float GetProgress()
+        {
             // 没有配表时视为已完成，避免 0/0 得到 NaN
             if (maxCfgNum <= 0)
                 return 1f;
 
             float progress = loadNum * 1f / maxCfgNum;
             return progress > 1f ? 1f : progress;
-		}
+        }
 
         public bool IsDone()
-		{
+        {
             return loadNum >= maxCfgNum;
-		}
-	}
+        }
+        #endregion
+    }
 }

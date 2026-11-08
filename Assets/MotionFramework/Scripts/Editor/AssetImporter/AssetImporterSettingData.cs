@@ -9,7 +9,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
-using MotionFramework.Utility;
 
 namespace MotionFramework.Editor
 {
@@ -61,12 +60,11 @@ namespace MotionFramework.Editor
 			_cacheTypes.Clear();
 			_cacheProcessor.Clear();
 
-			// 获取所有资源处理器类型
-			List<Type> types = AssemblyUtility.GetAssignableTypes(AssemblyUtility.GameScriptAssemblyEditorName, typeof(IAssetProcessor));
-			types.Add(typeof(DefaultProcessor));
-			for (int i = 0; i < types.Count; i++)
+			// 只注册内置资源处理器，不再按程序集名反射扫描
+			Type[] processorTypes = { typeof(DefaultProcessor) };
+			for (int i = 0; i < processorTypes.Length; i++)
 			{
-				Type type = types[i];
+				Type type = processorTypes[i];
 				if (_cacheTypes.ContainsKey(type.Name) == false)
 					_cacheTypes.Add(type.Name, type);
 			}

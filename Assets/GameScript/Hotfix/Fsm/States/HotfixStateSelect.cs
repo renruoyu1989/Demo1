@@ -1,3 +1,5 @@
+﻿
+using MotionFramework.Window;
 
 namespace Hotfix
 {
@@ -12,7 +14,7 @@ namespace Hotfix
 
 		public override void Enter()
 		{
-			UIManager.Instance.OpenWindow(EWindowType.UISelect, FerryGameCommands.PendingSelectMode);
+			WindowManager.Instance.OpenWindow<UISelect>(FerryGameCommands.PendingSelectMode);
 		}
 
 		public override void Execute()
@@ -21,7 +23,7 @@ namespace Hotfix
 
 		public override void Exit()
 		{
-			UIManager.Instance.CloseWindow(EWindowType.UISelect);
+			WindowManager.Instance.CloseWindow<UISelect>();
 		}
 	}
 }

@@ -11,7 +11,6 @@ using MotionFramework.Reference;
 
 namespace MotionFramework.Console
 {
-	[ConsoleAttribute("游戏日志", 101)]
 	internal class GameLogWindow : IConsoleWindow
 	{
 		private class LogWrapper : IReference

@@ -1,11 +1,13 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
+
+using MotionFramework.Window;
 
 namespace Hotfix
 {
 	/// <summary>设置：语言、音乐、音效与音量，全部走 AudioPlayerSetting 持久化</summary>
-	[Window(EWindowType.UIOptions, EWindowLayer.Panel)]
-	public class UIOptions : UIWindow
+	[Window((int)EWindowLayer.Panel, false)]
+	public class UIOptions : WindowBase
 	{
 		private Button _zhButton;
 		private Button _twButton;
@@ -63,7 +65,7 @@ namespace Hotfix
 				new Vector2(260f, 64f), () =>
 				{
 					AudioPlayerSetting.SaveAudioSetting();
-					UIManager.Instance.CloseWindow(EWindowType.UIOptions);
+					WindowManager.Instance.CloseWindow<UIOptions>();
 				});
 
 			Refresh();

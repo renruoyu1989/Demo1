@@ -62,19 +62,6 @@ public class SheetData
 		IRow row2 = sheet.GetRow(++firstRowNum); //名称
 		IRow row3 = sheet.GetRow(++firstRowNum); //CBS
 
-		// 检测策划备注行
-		while (true)
-		{
-			int checkRow = firstRowNum + 1;
-			if (checkRow > sheet.LastRowNum)
-				break;
-			IRow row = sheet.GetRow(checkRow);
-			if (IsNotesRow(row))
-				++firstRowNum;
-			else
-				break;
-		}
-
 		// 组织头部数据
 		for (int cellNum = row1.FirstCellNum; cellNum < row1.LastCellNum; cellNum++)
 		{
@@ -105,8 +92,22 @@ public class SheetData
 			throw new Exception("表格必须设立一个 'id' 列.");
 		}
 
+		// 表头下面可能还有中文说明行、# 备注行和空行。
+		// 只认 # 会把说明行当成第一条数据，紧随的空行又让读取提前终止，真实数据一条都读不到。
+		// 这里统一跳过，直到遇到 id 列合法的第一条数据行。
+		int tableBeginRowNum = firstRowNum + 1;
+		while (tableBeginRowNum <= sheet.LastRowNum)
+		{
+			IRow row = sheet.GetRow(tableBeginRowNum);
+			if (IsNotesRow(row) || IsEndRow(row) || IsIdValueValid(row) == false)
+			{
+				++tableBeginRowNum;
+				continue;
+			}
+			break;
+		}
+
 		// 所有数据行
-		int tableBeginRowNum = ++firstRowNum; //Table初始行
 		for (int rowNum = tableBeginRowNum; rowNum <= sheet.LastRowNum; rowNum++)
 		{
 			IRow row = sheet.GetRow(rowNum);
@@ -161,9 +162,42 @@ public class SheetData
 	/// </summary>
 	public bool IsNotesRow(IRow row)
 	{
+		if (row == null)
+			return true;
+
 		ICell firstCell = row.GetCell(row.FirstCellNum);
 		string value = GetCellValue(firstCell);
 		return value.ToLower().Contains(ConstDefine.StrNotesRow);
+	}
+
+	/// <summary>
+	/// id 列是否是可解析的数据值（用来把中文说明行排除掉）
+	/// </summary>
+	private bool IsIdValueValid(IRow row)
+	{
+		if (row == null)
+			return false;
+
+		HeadWrapper idHead = null;
+		for (int i = 0; i < Heads.Count; i++)
+		{
+			if (Heads[i].Name == ConstDefine.StrHeadId)
+			{
+				idHead = Heads[i];
+				break;
+			}
+		}
+		if (idHead == null)
+			return true;
+
+		string value = GetCellValue(row.GetCell(idHead.CellNum));
+		if (string.IsNullOrEmpty(value))
+			return false;
+		if (idHead.Type == "int")
+			return int.TryParse(value, out _);
+		if (idHead.Type == "long")
+			return long.TryParse(value, out _);
+		return true;
 	}
 
 	/// <summary>

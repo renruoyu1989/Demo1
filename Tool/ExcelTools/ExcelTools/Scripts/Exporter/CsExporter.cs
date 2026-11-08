@@ -1,12 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Globalization;
 using System.IO;
+using System.Text;
 
+/// <summary>
+/// 导出客户端 C# 配表。
+/// 生成的代码与 Assets/GameScript/Hotfix/Config/AutoGenerateConfig/*.cs 一致：
+/// 数据在生成期直接写进 C#（ConfigTab + AssetConfig.AddElement），运行时不做字节流解析。
+/// </summary>
 [ExportAttribute("导出CS脚本")]
 public class CsExporter : BaseExporter
 {
+	private const string ProtectedProperty = " { protected set; get; }";
+
 	public CsExporter(SheetData sheetData)
 		: base(sheetData)
 	{
@@ -15,285 +22,278 @@ public class CsExporter : BaseExporter
 	public override void ExportFile(string path, string createLogo)
 	{
 		string filePath = StringHelper.MakeSaveFullPath(path, $"Cfg{_sheet.FileName}.cs");
+		List<HeadWrapper> heads = GetExportHeads(createLogo);
+		GetIdHead(heads); // 提前校验，避免写出一半文件
+
 		using (FileStream fs = new FileStream(filePath, FileMode.Create))
-		using (StreamWriter sw = new StreamWriter(fs))
+		using (StreamWriter sw = new StreamWriter(fs, new UTF8Encoding(false)))
 		{
-			WriteNamespace(sw, createLogo);
-
-			if (createLogo == "C")
-			{
-				sw.WriteLine("namespace Hotfix");
-            }
-            else
-            {
-                sw.WriteLine("namespace App.Config");
-            }
-            sw.WriteLine("{");
-
-			// Table类
-			WriteTabCalss(sw, createLogo);
-			sw.WriteLine("\t{");
-			WriteTabClassMember(sw, createLogo);
+			WriteHeader(sw);
+			WriteTabClass(sw, heads);
 			sw.WriteLine();
-			WriteTabClassFunction(sw, createLogo);
-			sw.WriteLine("\t}");
-			sw.WriteLine();
-
-			// Config类
-			WriteCfgAttribute(sw, createLogo);
-			WriteCfgClass(sw, createLogo);
-			sw.WriteLine("\t{");
-			WriteCfgClassFunction(sw, createLogo);
-			sw.WriteLine("\t}");
-            sw.WriteLine("}");
-        }
+			WriteConfigClass(sw, heads, createLogo);
+			sw.WriteLine("}");
+		}
 	}
-	private void WriteNamespace(StreamWriter sw, string createLogo)
+
+	/// <summary>参与本次导出的列（跳过策划注释列与不匹配导出标记的簇）</summary>
+	private List<HeadWrapper> GetExportHeads(string createLogo)
+	{
+		List<HeadWrapper> heads = new List<HeadWrapper>();
+		for (int i = 0; i < _sheet.Heads.Count; i++)
+		{
+			HeadWrapper head = _sheet.Heads[i];
+			if (head.IsNotes || head.Logo.Contains(createLogo) == false)
+				continue;
+			heads.Add(head);
+		}
+		return heads;
+	}
+
+	private static HeadWrapper GetIdHead(List<HeadWrapper> heads)
+	{
+		for (int i = 0; i < heads.Count; i++)
+		{
+			if (heads[i].Name == ConstDefine.StrHeadId)
+				return heads[i];
+		}
+		throw new Exception("表格必须设立一个 'id' 列.");
+	}
+
+	private void WriteHeader(StreamWriter sw)
 	{
 		sw.WriteLine("//--------------------------------------------------");
 		sw.WriteLine("// 自动生成  请勿修改");
-		sw.WriteLine("// 研发人员实现LANG多语言接口");
+		sw.WriteLine($"// 数据来源：表格/{_sheet.FileName}.xlsx");
 		sw.WriteLine("//--------------------------------------------------");
-
-		if (createLogo == "C")
-		{
-			sw.WriteLine("using MotionFramework.IO;");
-			sw.WriteLine("using System.Collections.Generic;");
-			sw.WriteLine("using MotionFramework.Config;");
-		}
-		else if (createLogo == "S")
-		{
-            sw.WriteLine("using Hawk.Config;");
-            sw.WriteLine("using System.Collections.Generic;");
-            sw.WriteLine("using Hawk.Util;"); 
-        }
-		
+		sw.WriteLine("using System.Collections.Generic;");
 		sw.WriteLine();
-	}
-	private void WriteTabCalss(StreamWriter sw, string createLogo)
-	{
-		if (createLogo == "C")
-		{
-			sw.WriteLine($"\t[Config(\"{_sheet.FileName}\")]");
-            sw.WriteLine($"\tpublic partial class Cfg{_sheet.FileName}Table : ConfigTable");
-        }
-		else
-		{
-			sw.WriteLine($"\t[HawkConfig(\"{_sheet.FileName}\")]");
-            sw.WriteLine($"\tpublic partial class Cfg{_sheet.FileName}Table : HawkConfigTable");
-        }
+		sw.WriteLine("namespace Hotfix");
+		sw.WriteLine("{");
 	}
 
-	private void WriteTabClassMember(StreamWriter sw, string createLogo)
+	private void WriteTabClass(StreamWriter sw, List<HeadWrapper> heads)
 	{
-		string tChar = "\t\t";
-		string protectedChar = " { protected set; get; }";
+		string tabName = $"Cfg{_sheet.FileName}Tab";
+		sw.WriteLine($"\tpublic class {tabName} : ConfigTab");
+		sw.WriteLine("\t{");
 
-		for (int i = 0; i < _sheet.Heads.Count; i++)
+		// 字段
+		for (int i = 0; i < heads.Count; i++)
 		{
-			HeadWrapper head = _sheet.Heads[i];
-
-			if (head.IsNotes || head.Logo.Contains(createLogo) == false)
-				continue;
-
-			// 跳过ID
+			HeadWrapper head = heads[i];
 			if (head.Name == ConstDefine.StrHeadId)
 				continue;
 
-			// 变量名称首字母大写
-			string headName = StringHelper.ToUpperFirstChar(head.Name);
-
-			if (head.Type == "int" || head.Type == "List<int>" ||
-				head.Type == "long" || head.Type == "List<long>" ||
-				head.Type == "float" || head.Type == "List<float>" ||
-				head.Type == "double" || head.Type == "List<double>" ||
-				head.Type == "string" || head.Type == "List<string>" ||
-				head.Type == "bool")
+			string name = StringHelper.ToUpperFirstChar(head.Name);
+			if (head.Type == "language")
 			{
-				sw.WriteLine(tChar + $"public {head.Type} " + headName + protectedChar);
+				// 多语言列保存总表 ID，读取时按当前语言转换
+				sw.WriteLine($"\t\tpublic string {name} {{ get {{ return LANG.Convert({name}ID); }} }}");
+				sw.WriteLine($"\t\tpublic int {name}ID{ProtectedProperty}");
 			}
-			else if (head.Type == "language")
+			else
 			{
-				// 客户端：保存多语言ID，读取属性时再按当前语言转换（支持运行时切语言）
-				if (createLogo == "C")
-				{
-					sw.WriteLine(tChar + $"public string " + headName + " { get { return LANG.Convert(" + headName + "ID); } }");
-					sw.WriteLine(tChar + $"public int " + headName + "ID" + protectedChar);
-				}
-				else
-				{
-					sw.WriteLine(tChar + $"public string " + headName + protectedChar);
-				}
-			}
-			else if (head.Type == "List<language>")
-			{
-				sw.WriteLine(tChar + $"public List<string> " + headName + protectedChar);
-			}
-			else if (head.Type.Contains("enum") || head.Type.Contains("class"))
-			{
-				string extendType = StringHelper.GetExtendType(head.Type);
-                if(head.Type.Contains("List"))
-                {
-                    sw.WriteLine(tChar + $"public List<{extendType}> " + headName + protectedChar);
-                }
-                else
-                {
-                    sw.WriteLine(tChar + $"public {extendType} " + headName + protectedChar);
-                }
-			}
-			else if (head.Type.Contains("number"))
-			{
-				sw.WriteLine(tChar + $"public float " + headName + protectedChar);
-			}
-            else
-			{
-				throw new Exception($"Not support head type {head.Type}");
+				sw.WriteLine($"\t\tpublic {GetCSharpType(head)} {name}{ProtectedProperty}");
 			}
 		}
-	}
-	private void WriteTabClassFunction(StreamWriter sw, string createLogo)
-	{
-		string tChar = "\t\t";
-		string tTwoChar = "\t\t\t";
+		sw.WriteLine();
 
-		sw.WriteLine(tChar + "public override void ReadByte(ByteBuffer byteBuf)");
-		sw.WriteLine(tChar + "{");
-
-		for (int i = 0; i < _sheet.Heads.Count; i++)
+		// 构造函数：id 固定在第一位，其余按表格列顺序
+		List<string> args = new List<string> { "int id" };
+		for (int i = 0; i < heads.Count; i++)
 		{
-			HeadWrapper head = _sheet.Heads[i];
-
-			if (head.IsNotes || head.Logo.Contains(createLogo) == false)
+			HeadWrapper head = heads[i];
+			if (head.Name == ConstDefine.StrHeadId)
 				continue;
 
-			// 变量名称首字母大写
-			string headName = StringHelper.ToUpperFirstChar(head.Name);
-
-			// HashCode
-			if (head.Name == ConstDefine.StrHeadId && head.Type == "string")
-			{
-				sw.WriteLine(tTwoChar + $"{headName} = byteBuf.ReadUTF().GetHashCode();");
+			string param = StringHelper.ToLowerFirstChar(head.Name);
+			args.Add(head.Type == "language" ? $"int {param}ID" : $"{GetCSharpType(head)} {param}");
+		}
+		sw.WriteLine($"\t\tpublic {tabName}({string.Join(", ", args)})");
+		sw.WriteLine("\t\t{");
+		sw.WriteLine("\t\t\tId = id;");
+		for (int i = 0; i < heads.Count; i++)
+		{
+			HeadWrapper head = heads[i];
+			if (head.Name == ConstDefine.StrHeadId)
 				continue;
+
+			string name = StringHelper.ToUpperFirstChar(head.Name);
+			string param = StringHelper.ToLowerFirstChar(head.Name);
+			if (head.Type == "language")
+				sw.WriteLine($"\t\t\t{name}ID = {param}ID;");
+			else
+				sw.WriteLine($"\t\t\t{name} = {param};");
+		}
+		sw.WriteLine("\t\t}");
+		sw.WriteLine("\t}");
+	}
+
+	private void WriteConfigClass(StreamWriter sw, List<HeadWrapper> heads, string createLogo)
+	{
+		string cfgName = $"Cfg{_sheet.FileName}";
+		string tabName = $"{cfgName}Tab";
+		HeadWrapper idHead = GetIdHead(heads);
+
+		sw.WriteLine($"\tpublic partial class {cfgName} : AssetConfig");
+		sw.WriteLine("\t{");
+		sw.WriteLine($"\t\tprivate static {cfgName} _instance;");
+		sw.WriteLine($"\t\tpublic static {cfgName} Instance");
+		sw.WriteLine("\t\t{");
+		sw.WriteLine("\t\t\tget");
+		sw.WriteLine("\t\t\t{");
+		sw.WriteLine($"\t\t\t\tif (_instance == null) {{ _instance = new {cfgName}(); _instance.Create(); }}");
+		sw.WriteLine("\t\t\t\treturn _instance;");
+		sw.WriteLine("\t\t\t}");
+		sw.WriteLine("\t\t}");
+		sw.WriteLine();
+		sw.WriteLine($"\t\tprivate {cfgName}() {{ }}");
+		sw.WriteLine($"\t\tpublic {tabName} GetCfgTab(int key)");
+		sw.WriteLine("\t\t{");
+		sw.WriteLine($"\t\t\treturn GetTab(key) as {tabName};");
+		sw.WriteLine("\t\t}");
+		sw.WriteLine("\t\tpublic void Create()");
+		sw.WriteLine("\t\t{");
+
+		for (int row = 0; row < _sheet.Tables.Count; row++)
+		{
+			TableWrapper table = _sheet.Tables[row];
+			string idLiteral = ToIdLiteral(idHead, table.GetCellValue(idHead.CellNum));
+
+			List<string> literals = new List<string> { idLiteral };
+			for (int i = 0; i < heads.Count; i++)
+			{
+				HeadWrapper head = heads[i];
+				if (head.Name == ConstDefine.StrHeadId)
+					continue;
+				literals.Add(ToLiteral(head, table.GetCellValue(head.CellNum), createLogo));
 			}
 
-			if (head.Type == "bool")
-			{
-				sw.WriteLine(tTwoChar + $"{headName} = byteBuf.ReadBool();");
-			}
-			else if (head.Type == "int")
-			{
-				sw.WriteLine(tTwoChar + $"{headName} = byteBuf.ReadInt();");
-			}
-			else if (head.Type == "long")
-			{
-				sw.WriteLine(tTwoChar + $"{headName} = byteBuf.ReadLong();");
-			}
-			else if (head.Type == "float")
-			{
-				sw.WriteLine(tTwoChar + $"{headName} = byteBuf.ReadFloat();");
-			}
-			else if (head.Type == "number")
-			{
-				sw.WriteLine(tTwoChar + $"{headName} = byteBuf.ReadFloat();");
-			}
-			else if (head.Type == "double")
-			{
-				sw.WriteLine(tTwoChar + $"{headName} = byteBuf.ReadDouble();");
-			}
-			else if (head.Type == "List<int>")
-			{
-				sw.WriteLine(tTwoChar + $"{headName} = byteBuf.ReadListInt();");
-			}
-			else if (head.Type == "List<long>")
-			{
-				sw.WriteLine(tTwoChar + $"{headName} = byteBuf.ReadListLong();");
-			}
-			else if (head.Type == "List<float>")
-			{
-				sw.WriteLine(tTwoChar + $"{headName} = byteBuf.ReadListFloat();");
-			}
-			else if (head.Type == "List<double>")
-			{
-				sw.WriteLine(tTwoChar + $"{headName} = byteBuf.ReadListDouble();");
-			}
+			sw.WriteLine($"\t\t\tAddElement({idLiteral}, new {tabName}({string.Join(", ", literals)}));");
+		}
 
-			else if (head.Type == "string")
-			{
-				sw.WriteLine(tTwoChar + $"{headName} = byteBuf.ReadUTF();");
-			}
-			else if (head.Type == "List<string>")
-			{
-				sw.WriteLine(tTwoChar + $"{headName} = byteBuf.ReadListUTF();");
-			}
+		sw.WriteLine("\t\t}");
+		sw.WriteLine("\t}");
+	}
 
-			// NOTE：多语言在字节流会是哈希值
-			else if (head.Type == "language")
-			{
-				if (createLogo.ToLower() == "s")
-                    sw.WriteLine(tTwoChar + $"{headName} = byteBuf.ReadUTF();");
-				else
-                    sw.WriteLine(tTwoChar + $"{headName}ID = byteBuf.ReadInt();");
-			}
-			else if (head.Type == "List<language>")
-			{
-				if (createLogo.ToLower() == "s")
-                    sw.WriteLine(tTwoChar + $"{headName} = byteBuf.ReadListUTF();");
-                else
-					sw.WriteLine(tTwoChar + $"{headName} = LANG.Convert(byteBuf.ReadListInt());");
-			}
+	private static string GetCSharpType(HeadWrapper head)
+	{
+		string type = head.Type;
+		if (type == "number" || type == "language")
+			return type == "number" ? "float" : "string";
+		if (type == "List<language>")
+			return "List<string>";
+		if (type.Contains("enum") || type.Contains("class"))
+		{
+			string extendType = StringHelper.GetExtendType(type);
+			return type.Contains("List") ? $"List<{extendType}>" : extendType;
+		}
+		return type;
+	}
 
-			else if (head.Type.Contains("enum"))
+	private static string ToIdLiteral(HeadWrapper head, string value)
+	{
+		if (string.IsNullOrEmpty(value))
+			value = "0";
+		if (head.Type == "string")
+			return value.GetFixedHashCode().ToString(CultureInfo.InvariantCulture);
+		return value;
+	}
+
+	private static string ToLiteral(HeadWrapper head, string value, string createLogo)
+	{
+		string type = head.Type;
+		if (value == null)
+			value = string.Empty;
+
+		if (type == "int" || type == "long" || type == "double")
+			return string.IsNullOrEmpty(value) ? "0" : value;
+
+		if (type == "float")
+			return FloatLiteral(ParseFloat(value));
+
+		if (type == "number")
+			return FloatLiteral(ParseFloat(value) * 0.0001f);
+
+		if (type == "bool")
+			return string.IsNullOrEmpty(value) || value == "0" ? "false" : "true";
+
+		if (type == "string")
+			return $"\"{EscapeString(value)}\"";
+
+		if (type.StartsWith("List<", StringComparison.Ordinal))
+			return ListLiteral(type, value, createLogo);
+
+		if (type == "language")
+			return LanguageMgr.Instance.GetValueKeyCode(value.GetFixedHashCode()).ToString(CultureInfo.InvariantCulture);
+
+		if (type.Contains("enum"))
+			return $"({StringHelper.GetExtendType(type)}){(string.IsNullOrEmpty(value) ? "0" : value)}";
+
+		if (type.Contains("class"))
+			throw new Exception($"列 {head.Name} 的类型 {type} 无法在生成期展开为 C# 字面量，请改用基础类型或 List<T>.");
+
+		throw new Exception($"Not support head type {type}");
+	}
+
+	private static string ListLiteral(string type, string value, string createLogo)
+	{
+		string elemType = type.Substring(5, type.Length - 6);
+		string csElemType = elemType == "language" ? "string" : elemType;
+		string[] items = string.IsNullOrEmpty(value)
+			? new string[0]
+			: value.Split(new char[] { ConstDefine.StrSplitChar }, StringSplitOptions.RemoveEmptyEntries);
+
+		List<string> literals = new List<string>();
+		for (int i = 0; i < items.Length; i++)
+		{
+			string item = items[i].Trim();
+			switch (elemType)
 			{
-				string extendType = StringHelper.GetExtendType(head.Type);
-				sw.WriteLine(tTwoChar + $"{headName} = StringConvert.IndexToEnum<{extendType}>(byteBuf.ReadInt());");
-			}
-            else if (head.Type.Contains("class"))
-			{
-				string extendType = StringHelper.GetExtendType(head.Type);
-                if (head.Type.Contains("List"))
-                {
-                    sw.WriteLine(tTwoChar + $"{headName} = {extendType}.ParseList(byteBuf);");
-                }
-                else
-                {
-                    sw.WriteLine(tTwoChar + $"{headName} = {extendType}.Parse(byteBuf);");
-                }
-			}
-            else
-			{
-				throw new Exception($"Not support head type {head.Type}");
+				case "int":
+				case "long":
+				case "double":
+					literals.Add(string.IsNullOrEmpty(item) ? "0" : item);
+					break;
+				case "float":
+					literals.Add(FloatLiteral(ParseFloat(item)));
+					break;
+				case "string":
+					literals.Add($"\"{EscapeString(item)}\"");
+					break;
+				case "language":
+					literals.Add($"LANG.Convert({LanguageMgr.Instance.GetValueKeyCode(item.GetFixedHashCode())})");
+					break;
+				default:
+					throw new Exception($"Not support list element type {elemType}");
 			}
 		}
 
-		sw.WriteLine(tChar + "}");
+		return literals.Count == 0
+			? $"new List<{csElemType}>()"
+			: $"new List<{csElemType}> {{ {string.Join(", ", literals)} }}";
 	}
-	private void WriteCfgAttribute(StreamWriter sw, string createLogo)
-	{
-        if (createLogo == "C")
-            sw.WriteLine($"\t[Config(\"{_sheet.FileName}\")]");
-		else
-            sw.WriteLine($"\t[HawkConfig(\"{_sheet.FileName}\")]");
-    }
-	private void WriteCfgClass(StreamWriter sw, string createLogo)
-	{
-        if (createLogo == "C")
-            sw.WriteLine($"\tpublic partial class Cfg{_sheet.FileName} : AssetConfig");
-		else
-            sw.WriteLine($"\tpublic partial class Cfg{_sheet.FileName} : HawkAssetConfig");
-    }
-	private void WriteCfgClassFunction(StreamWriter sw, string createLogo)
-	{
-		string tChar = "\t\t";
-		string tTwoChar = "\t\t\t";
 
-        if (createLogo == "C")
-            sw.WriteLine(tChar + "protected override ConfigTable ReadTable(ByteBuffer byteBuffer)");
-		else
-            sw.WriteLine(tChar + "protected override HawkConfigTable ReadTable(ByteBuffer byteBuffer)");
-        sw.WriteLine(tChar + "{");
-		sw.WriteLine(tTwoChar + $"Cfg{_sheet.FileName}Table table = new Cfg{_sheet.FileName}Table" + "();");
-		sw.WriteLine(tTwoChar + "table.ReadByte(byteBuffer);");
-		sw.WriteLine(tTwoChar + "return table;");
-		sw.WriteLine(tChar + "}");
+	private static float ParseFloat(string value)
+	{
+		if (string.IsNullOrEmpty(value))
+			return 0f;
+		return float.Parse(value, CultureInfo.InvariantCulture);
+	}
+
+	private static string FloatLiteral(float value)
+	{
+		return value.ToString("R", CultureInfo.InvariantCulture) + "f";
+	}
+
+	private static string EscapeString(string value)
+	{
+		return value
+			.Replace("\\", "\\\\")
+			.Replace("\"", "\\\"")
+			.Replace("\r", "\\r")
+			.Replace("\n", "\\n")
+			.Replace("\t", "\\t");
 	}
 }

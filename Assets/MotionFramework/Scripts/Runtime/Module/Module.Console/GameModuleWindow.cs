@@ -9,7 +9,6 @@ using UnityEngine;
 
 namespace MotionFramework.Console
 {
-	[ConsoleAttribute("游戏模块", 100)]
 	internal class GameModuleWindow : IConsoleWindow
 	{
 		// GUI相关

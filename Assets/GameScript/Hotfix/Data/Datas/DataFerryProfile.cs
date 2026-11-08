@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using MotionFramework.Data;
 using UnityEngine;
 
 namespace Hotfix
@@ -26,19 +27,20 @@ namespace Hotfix
 	/// <summary>
 	/// 过河游戏的进度存档：解锁、通关、最高分、总分
 	/// </summary>
+	[Data(typeof(DataFerryProfile), true)]
 	public class DataFerryProfile : DataBase
 	{
 		private FerrySaveData _data = new FerrySaveData();
 
-		public override void Start()
+		public override void OnCreate()
 		{
 		}
 
-		public override void Update()
+		public override void OnUpdate()
 		{
 		}
 
-		public override void Destroy()
+		public override void OnDestroy()
 		{
 		}
 

@@ -121,16 +121,13 @@ public class CommandLineOptions
 			}
 		}
 
-		// 默认表格目录
+		// 默认表格目录：工具发布目录的上一级就是仓库根，表格源文件实际放在 表格/
 		if (string.IsNullOrEmpty(options.ExcelPath))
-			options.ExcelPath = ToFullPath("../Excel/");
+			options.ExcelPath = ToFullPath("../表格/");
 
-		// 默认导出类型
+		// 默认只导出 C#：当前工程的配置数据在生成期编进 C#，bytes/xml 没有运行时消费方
 		if (options.ExporterTypes.Count == 0)
-		{
 			options.AddExporterType(typeof(CsExporter));
-			options.AddExporterType(typeof(BytesExporter));
-		}
 
 		return options;
 	}
@@ -143,8 +140,8 @@ public class CommandLineOptions
 		Console.WriteLine("用法: ExcelTools [选项]");
 		Console.WriteLine();
 		Console.WriteLine("选项:");
-		Console.WriteLine("  -e, --excel <目录>   表格源文件目录（默认 ../Excel/）");
-		Console.WriteLine("  -t, --type <类型>    导出类型，逗号分隔: cs | bytes | xml | all（默认 cs,bytes）");
+		Console.WriteLine("  -e, --excel <目录>   表格源文件目录（默认 ../表格/）");
+		Console.WriteLine("  -t, --type <类型>    导出类型，逗号分隔: cs | bytes | xml | all（默认 cs）");
 		Console.WriteLine("  -o, --out <目录>     导出目录。只导出一种类型时直接使用该目录；");
 		Console.WriteLine("                       导出多种类型时作为根目录，按类型建 cs/ bytes/ xml/ 子目录");
 		Console.WriteLine("  -c, --clean          导出前清空导出目录（删除除 .meta 外的所有文件）");
@@ -156,7 +153,7 @@ public class CommandLineOptions
 		Console.WriteLine($"      cs    -> {ExportConfig.DefaultCsDir}");
 		Console.WriteLine($"      bytes -> {ExportConfig.DefaultBytesDir}");
 		Console.WriteLine($"      xml   -> {ExportConfig.DefaultXmlDir}");
-		Console.WriteLine("  * 默认目录导出前会清空；用 --out 指定目录时默认不清空（需显式加 --clean）。");
+		Console.WriteLine("  * 默认不清空导出目录；需要清空时显式加 --clean。");
 		Console.WriteLine("  * 路径可以是绝对路径，也可以是相对当前工作目录的路径。");
 		Console.WriteLine();
 		Console.WriteLine("示例:");

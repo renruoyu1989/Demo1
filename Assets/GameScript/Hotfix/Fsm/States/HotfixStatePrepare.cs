@@ -2,6 +2,8 @@
 using System.Collections;
 using System.Collections.Generic;
 
+using MotionFramework.Window;
+
 namespace Hotfix
 {
 	public class HotfixStatePrepare : HotfixFsmState
@@ -18,15 +20,15 @@ namespace Hotfix
 
 		public override void Execute()
 		{
-			if (UIManager.Instance.IsPrepareUIRoot())
+			if (WindowManager.Instance.IsRootPrepare())
 			{
 				if (_isPreload == false)
 				{
 					_isPreload = true;
-					UIManager.Instance.PreloadWindow(EWindowType.UILoading);
+					WindowManager.Instance.PreloadWindow<UILoading>();
 				}
 
-				if (UIManager.Instance.IsLoadingWindow() == false)
+				if (WindowManager.Instance.IsLoading() == false)
 				{
 					HotfixFsmManager.Instance.ChangeState(EHotfixStateType.Menu);
 				}

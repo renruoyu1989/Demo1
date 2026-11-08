@@ -1,12 +1,14 @@
-using System.Text;
+﻿using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
+
+using MotionFramework.Window;
 
 namespace Hotfix
 {
 	/// <summary>帮助说明：操作三步、胜负与计分、连击模式、快捷键，文案走多语言表</summary>
-	[Window(EWindowType.UIHelp, EWindowLayer.Panel)]
-	public class UIHelp : UIWindow
+	[Window((int)EWindowLayer.Panel, false)]
+	public class UIHelp : WindowBase
 	{
 		private Text _body;
 
@@ -23,7 +25,7 @@ namespace Hotfix
 			_body.text = BuildHelpText();
 
 			FerryUIBuilder.CreateButton(root, LocalizationManager.Get("Ferry_Close"), new Vector2(0f, -330f),
-				new Vector2(260f, 64f), () => UIManager.Instance.CloseWindow(EWindowType.UIHelp));
+				new Vector2(260f, 64f), () => WindowManager.Instance.CloseWindow<UIHelp>());
 		}
 
 		private static string BuildHelpText()

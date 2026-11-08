@@ -1,6 +1,10 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+
+using MotionFramework.Window;
+
+using MotionFramework.Data;
 
 namespace Hotfix
 {
@@ -8,8 +12,8 @@ namespace Hotfix
 	/// 关卡选择：按 LevelMap 配表把关卡画成地图节点（含相邻路径），
 	/// 点击已解锁节点弹出关卡卡片，卡片里再进入关卡。经典 / 连击两套地图。
 	/// </summary>
-	[Window(EWindowType.UISelect, EWindowLayer.Panel)]
-	public class UISelect : UIWindow
+	[Window((int)EWindowLayer.Panel, true)]
+	public class UISelect : WindowBase
 	{
 		private const float MapScale = 1.2f;
 		private const float MapHalfWidth = 500f;
@@ -54,7 +58,7 @@ namespace Hotfix
 			FerryUIBuilder.CreateButton(root, LocalizationManager.Get("Ferry_Back"), new Vector2(-820f, 430f),
 				new Vector2(180f, 58f), () =>
 				{
-					UIManager.Instance.CloseWindow(EWindowType.UISelect);
+					WindowManager.Instance.CloseWindow<UISelect>();
 					FerryGameCommands.GoMenu();
 				}, 22);
 		}
@@ -183,7 +187,7 @@ namespace Hotfix
 			if (_selectedLevelId <= 0)
 				return;
 
-			UIManager.Instance.CloseWindow(EWindowType.UISelect);
+			WindowManager.Instance.CloseWindow<UISelect>();
 			FerryGameCommands.SelectLevel(_selectedLevelId);
 		}
 	}

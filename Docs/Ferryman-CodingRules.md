@@ -15,8 +15,8 @@ View  →  Core  →  Data
   `Assets/GameScript/Editor/Validation/FerryLayeringValidator.cs` 会在编译前扫描并报错。
 - `View/**` 可以引用 `UnityEngine`，但**不允许**直接改逻辑层状态，只能读 `FerryGameSession`。
 - `UI/**` 只读数据 + 发意图 + 订阅事件，所有玩法操作必须走 `FerryGameCommands`。
-- **不要新增 asmdef**：`UIManager.CollectTypes()` 用 `typeof(HotfixTypeHelper).Assembly` 反射收集窗口，
-  拆程序集会静默漏掉 `[Window]` 窗口。分层靠目录约定 + 校验脚本保障。
+- 启动层与业务层同属 `Script` 程序集；新增窗口必须在 `UIManager` 的 `_registry` 静态表登记，
+  漏登记会在打开窗口时直接报 `KeyNotFoundException`，不会静默失效。分层靠目录约定 + 校验脚本保障。
 
 ## 2. 窗口
 
@@ -24,7 +24,7 @@ View  →  Core  →  Data
 
 1. `Assets/GameRes/UIPanel/<EWindowType 名>.prefab`：根挂 `Canvas + GraphicRaycaster + UIManifest`；
 2. `UI/EWindowType.cs` 加枚举；
-3. 窗口类标注 `[Window(EWindowType.X, EWindowLayer.Y)]`；
+3. 在 `UIManager._registry` 注册窗口构造器与 `EWindowLayer`；
 4. 控件在 `OnCreate()` 用 `FerryUIBuilder` 生成（prefab 只留结构，避免节点路径漂移）；
 5. `UIManifest` 自动刷新，收集器已包含该目录。
 

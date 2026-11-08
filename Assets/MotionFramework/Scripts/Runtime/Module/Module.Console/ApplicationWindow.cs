@@ -11,7 +11,6 @@ using UnityEngine.Profiling;
 
 namespace MotionFramework.Console
 {
-	[ConsoleAttribute("应用详情", 102)]
 	internal class ApplicationWindow : IConsoleWindow
 	{
 		// GUI相关
@@ -47,9 +46,6 @@ namespace MotionFramework.Console
 			GUILayout.EndHorizontal();
 
 			GUILayout.Space(space);
-
-			// DateTime dt = DataManager.Instance.GetData<DataRuntime>().GetServerTimeNow();
-			//ConsoleGUI.Lable($"Server Time : {dt.ToLongDateString() + dt.ToLongTimeString()}");
 
 			ConsoleGUI.Lable($"Local Time : {DateTime.Now.ToLongDateString() + DateTime.Now.ToLongTimeString()}");
 

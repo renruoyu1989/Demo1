@@ -11,7 +11,6 @@ using YooAsset;
 
 namespace MotionFramework.Console
 {
-	[ConsoleAttribute("游戏对象池", 105)]
 	internal class GameObjectPoolWindow : IConsoleWindow
 	{
 		// GUI相关

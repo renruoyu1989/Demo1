@@ -11,7 +11,7 @@ public static class StringHelper
 	/// </summary>
 	public static string MakeSaveFullPath(string path, string fileName)
 	{
-		return path + Path.DirectorySeparatorChar + fileName;
+		return Path.Combine(path, fileName);
 	}
 
 	/// <summary>

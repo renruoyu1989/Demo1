@@ -7,7 +7,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using MotionFramework.Utility;
 
 namespace MotionFramework.Console
 {
@@ -18,7 +17,6 @@ namespace MotionFramework.Console
 	{
 		private class WindowWrapper : IComparer<WindowWrapper>, IComparable<WindowWrapper>
 		{
-			public Type ClassType;
 			public string Title;
 			public int Priority;
 			public IConsoleWindow Instance;
@@ -45,10 +43,9 @@ namespace MotionFramework.Console
 		private static string[] _toolbarTitles;
 
 		/// <summary>
-		/// 初始化控制台
+		/// 初始化控制台：窗口直接静态注册，不再扫程序集找特性
 		/// </summary>
-		/// <param name="assemblyName">扩展的控制台窗口所在的程序集</param>
-		public static void Initialize(string assemblyName = AssemblyUtility.GameScriptAssemblyName)
+		public static void Initialize()
 		{
 			// 加载背景纹理
 			string textureName = "console_background";
@@ -56,31 +53,15 @@ namespace MotionFramework.Console
 			if (_bgTexture == null)
 				UnityEngine.Debug.LogWarning($"Not found {textureName} texture in Resources folder.");
 
-			// 获取所有控制台窗口类
-			List<Type> types = AssemblyUtility.GetAssignableAttributeTypes(AssemblyUtility.MotionFrameworkAssemblyName, typeof(IConsoleWindow), typeof(ConsoleAttribute));
-			List<Type> temps = AssemblyUtility.GetAssignableAttributeTypes(assemblyName, typeof(IConsoleWindow), typeof(ConsoleAttribute));
-			types.AddRange(temps);
-			for (int i = 0; i < types.Count; i++)
-			{
-				ConsoleAttribute attribute = (ConsoleAttribute)Attribute.GetCustomAttribute(types[i], typeof(ConsoleAttribute));
-				WindowWrapper wrapper = new WindowWrapper()
-				{
-					ClassType = types[i],
-					Title = attribute.Title,
-					Priority = attribute.Order,
-				};
-				_wrappers.Add(wrapper);
-			}
+			_wrappers.Clear();
+			Register("游戏模块", 100, new GameModuleWindow());
+			Register("游戏日志", 101, new GameLogWindow());
+			Register("应用详情", 102, new ApplicationWindow());
+			Register("引用池", 103, new ReferencePoolWindow());
+			Register("游戏对象池", 105, new GameObjectPoolWindow());
 
 			// 根据优先级排序
 			_wrappers.Sort();
-
-			// 创建实例类
-			for (int i = 0; i < _wrappers.Count; i++)
-			{
-				WindowWrapper wrapper = _wrappers[i];
-				wrapper.Instance = (IConsoleWindow)Activator.CreateInstance(wrapper.ClassType);
-			}
 
 			// 标题列表
 			List<string> titles = new List<string>();
@@ -89,6 +70,16 @@ namespace MotionFramework.Console
 				titles.Add(_wrappers[i].Title);
 			}
 			_toolbarTitles = titles.ToArray();
+		}
+
+		private static void Register(string title, int priority, IConsoleWindow instance)
+		{
+			_wrappers.Add(new WindowWrapper()
+			{
+				Title = title,
+				Priority = priority,
+				Instance = instance,
+			});
 		}
 
 		/// <summary>

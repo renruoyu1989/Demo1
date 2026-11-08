@@ -8,11 +8,6 @@ namespace MotionFramework.Window
 	{
 		private readonly List<UIWindow> _stack = new List<UIWindow>(100);
 
-		/// <summary>
-		/// 反射服务接口
-		/// </summary>
-		public IActivatorServices ActivatorServices { get; set; }
-
 		void IModule.OnCreate(object createParam)
 		{
 
@@ -26,7 +21,7 @@ namespace MotionFramework.Window
 				if (_stack.Count != count)
 					break;
 				UIWindow window = _stack[i];
-				if (window.IsPrepare)
+				if (window.IsPrepare && window.IsOpen)
 					window.InternalUpdate();
 			}
 		}
@@ -39,6 +34,56 @@ namespace MotionFramework.Window
 		/// UI根节点
 		/// </summary>
 		public UIRoot Root { private set; get; }
+
+		/// <summary>
+		/// 窗口资源路径生成器（由业务层注入，未注入时使用默认规则）
+		/// </summary>
+		public System.Func<System.Type, string> WindowLocationGetter { get; set; }
+
+		/// <summary>
+		/// 窗口准备完毕回调（由业务层注入，用于字体替换等定制）
+		/// </summary>
+		public System.Action<UIWindow> WindowPrepared { get; set; }
+
+		/// <summary>
+		/// 获取窗口资源路径
+		/// </summary>
+		public string GetWindowLocation(System.Type type)
+		{
+			if (WindowLocationGetter != null)
+				return WindowLocationGetter(type);
+			return $"UIPanel/{type.Name}";
+		}
+
+		/// <summary>
+		/// 打开窗口（资源路径由 WindowLocationGetter 生成）
+		/// </summary>
+		public UIWindow OpenWindow<T>(System.Object userData = null) where T : UIWindow
+		{
+			return OpenWindow(typeof(T), GetWindowLocation(typeof(T)), userData);
+		}
+
+		/// <summary>
+		/// 预加载窗口：创建并加载资源，随后立刻关闭显示
+		/// </summary>
+		public void PreloadWindow<T>() where T : UIWindow
+		{
+			if (HasWindow<T>())
+				return;
+
+			UIWindow window = CreateInstance(typeof(T));
+			Push(window);
+			window.InternalLoad(GetWindowLocation(typeof(T)), OnWindowPrepare, null);
+			window.Visible = false;
+		}
+
+		/// <summary>
+		/// UI根节点是否准备完毕
+		/// </summary>
+		public bool IsRootPrepare()
+		{
+			return Root != null && Root.IsPrepare;
+		}
 
 		/// <summary>
 		/// 是否有任意窗口正在加载
@@ -182,6 +227,7 @@ namespace MotionFramework.Window
 				UIWindow window = GetWindow(windowName);
 				Pop(window); //弹出窗口
 				Push(window); //重新压入
+				window.InternalOpen();
 				window.TryInvoke(OnWindowPrepare, userData);
 				return window;
 			}
@@ -208,6 +254,14 @@ namespace MotionFramework.Window
 			if (window == null)
 				return;
 
+			// 常驻窗口：只隐藏，不销毁、不出栈
+			if (window.DontDestroy)
+			{
+				window.InternalClose();
+				OnSetWindowVisible();
+				return;
+			}
+
 			window.InternalDestroy();
 			Pop(window);
 			// 注意：这里不能调用 OnSortWindowDepth，此时 window 已经出栈，
@@ -220,6 +274,14 @@ namespace MotionFramework.Window
 			UIWindow window = GetWindow(windowName);
 			if (window == null)
 				return;
+
+			// 常驻窗口：只隐藏，不销毁、不出栈
+			if (window.DontDestroy)
+			{
+				window.InternalClose();
+				OnSetWindowVisible();
+				return;
+			}
 
 			window.InternalDestroy();
 			Pop(window);
@@ -254,6 +316,10 @@ namespace MotionFramework.Window
 			window.InternalCreate();
 			window.InternalRefresh();
 			OnSetWindowVisible();
+
+			// 通知业务层（字体替换、二次定制等）
+			if (WindowPrepared != null)
+				WindowPrepared(window);
 		}
 		private void OnSortWindowDepth(UIWindow window)
 		{
@@ -288,6 +354,14 @@ namespace MotionFramework.Window
 			for (int i = _stack.Count - 1; i >= 0; i--)
 			{
 				UIWindow window = _stack[i];
+
+				// 已关闭（常驻窗口仅隐藏）的窗口不参与显隐与遮挡计算
+				if (window.IsOpen == false)
+				{
+					window.Visible = false;
+					continue;
+				}
+
 				if (isHideNext == false)
 				{
 					window.Visible = true;
@@ -308,16 +382,9 @@ namespace MotionFramework.Window
 			UIWindow window;
 			WindowAttribute attribute;
 
-			if (ActivatorServices != null)
-			{
-				window = ActivatorServices.CreateInstance(type) as UIWindow;
-				attribute = ActivatorServices.GetAttribute(type) as WindowAttribute;
-			}
-			else
-			{
-				window = Activator.CreateInstance(type) as UIWindow;
-				attribute = Attribute.GetCustomAttribute(type, typeof(WindowAttribute)) as WindowAttribute;
-			}
+			// 单程序集运行时不再需要反射服务（ILRuntime 适配层已移除），直接走标准反射
+			window = Activator.CreateInstance(type) as UIWindow;
+			attribute = Attribute.GetCustomAttribute(type, typeof(WindowAttribute)) as WindowAttribute;
 
 			if (window == null)
 				throw new Exception($"Window {type.FullName} create instance failed.");

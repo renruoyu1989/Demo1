@@ -4,12 +4,15 @@ using System.Collections.Generic;
 using UnityEngine;
 using MotionFramework;
 using MotionFramework.Console;
+using MotionFramework.Config;
+using MotionFramework.Data;
 using MotionFramework.Event;
 using MotionFramework.Audio;
 using MotionFramework.Scene;
 using MotionFramework.Pool;
-using MotionFramework.Config;
+using MotionFramework.Window;
 using YooAsset;
+using Hotfix;
 
 public class GameLauncher : MonoBehaviour
 {
@@ -30,6 +33,7 @@ public class GameLauncher : MonoBehaviour
 	private const int MaxInitRetryCount = 3;
 
 	private static GameLauncher _instance;
+	private bool _logicStarted;
 
 	void Awake()
 	{
@@ -56,7 +60,7 @@ public class GameLauncher : MonoBehaviour
 
 		// 初始化控制台
 		if (Application.isEditor || Debug.isDebugBuild)
-			DeveloperConsole.Initialize("Script");
+			DeveloperConsole.Initialize();
 
 		// 初始化应用
 		InitAppliaction();
@@ -78,13 +82,8 @@ public class GameLauncher : MonoBehaviour
 	{
 		MotionEngine.Update();
 
-		if (GameLogicBridge.Logic != null)
-			GameLogicBridge.Logic.Update();
-	}
-	void LateUpdate()
-	{
-		if (GameLogicBridge.Logic != null)
-			GameLogicBridge.Logic.LateUpdate();
+		if (_logicStarted)
+			HotfixMain.Instance.Update();
 	}
 	void OnGUI()
 	{
@@ -108,6 +107,14 @@ public class GameLauncher : MonoBehaviour
 
 		// 屏幕不休眠
 		Screen.sleepTimeout = SleepTimeout.NeverSleep;
+	}
+
+	/// <summary>
+	/// 自动存档请求（切后台、失去焦点、退出游戏）
+	/// </summary>
+	private void HandleAutoSaveRequest()
+	{
+		DataManager.Instance.SaveAll();
 	}
 
 	/// <summary>
@@ -199,17 +206,31 @@ public class GameLauncher : MonoBehaviour
 		// 创建对象池管理器
 		MotionEngine.CreateModule<GameObjectPoolManager>();
 
-		// 创建配表管理器（当前工程未使用配表，但保证 Instance 不为空，避免后续使用时踩空）
-		MotionEngine.CreateModule<ConfigManager>();
-
-		// 注意：WindowManager / AssemblyManager 当前工程未使用（UI 与热更由 GameScript 自行实现），
-		// 如需启用请在此处 CreateModule，不要直接访问它们的 Instance
-
 		// 初始化图集延迟绑定（必须在资源系统创建之后）
 		SpriteAtlasLoader.Initialize();
 
 		// 初始化多语言系统（必须在资源系统创建之后）
 		LocalizationManager.Initialize();
+
+		// 创建配置管理器并注册导表生成的配表
+		MotionEngine.CreateModule<ConfigManager>();
+		HotfixConfigs.RegisterAll();
+
+		// 创建数据管理器（自动收集 [Data] 数据类）
+		MotionEngine.CreateModule<DataManager>();
+		DataManager.Instance.SaveHandler = (slot, data) => SaveManager.Save(slot, data);
+		DataManager.Instance.LoadHandler = slot => SaveManager.Load<GameSaveData>(slot, null);
+		DataManager.Instance.ExistsHandler = slot => SaveManager.Exists(slot);
+		DataManager.Instance.DeleteHandler = slot => SaveManager.Delete(slot);
+		DataManager.Instance.DefaultSlotGetter = () => SaveManager.DefaultSlot;
+		SaveManager.OnRequestSave += HandleAutoSaveRequest;
+		DataManager.Instance.LoadAll();
+
+		// 创建界面管理器并注入业务资源规则
+		MotionEngine.CreateModule<WindowManager>();
+		WindowManager.Instance.WindowLocationGetter = type => $"{GameDefine.AssetRootPath}/UIPanel/{type.Name}";
+		WindowManager.Instance.WindowPrepared = window => UIFontProvider.ApplyFont(window.Go);
+		WindowManager.Instance.CreateUIRoot<CanvasRoot>($"{GameDefine.AssetRootPath}/UIPanel/UIRoot");
 
 		// 启动游戏业务逻辑
 		StartGameLogic();
@@ -240,12 +261,10 @@ public class GameLauncher : MonoBehaviour
 	/// </summary>
 	private void StartGameLogic()
 	{
-		if (GameLogicBridge.Logic == null)
-		{
-			UnityEngine.Debug.LogError("The game logic is not registered. Check the business assembly.");
+		if (_logicStarted)
 			return;
-		}
 
-		GameLogicBridge.Logic.Start();
+		_logicStarted = true;
+		HotfixMain.Instance.Start();
 	}
 }

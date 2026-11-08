@@ -11,14 +11,13 @@ public class ExportConfig
 	public static ExportConfig Instance = new ExportConfig();
 
 	/// <summary>
-	/// 默认导出目录（相对当前工作目录，即工具所在目录）
-	/// excelPath 为 ../Excel/ 时：
+	/// 默认导出目录（相对当前工作目录，即工具发布目录）
 	///   cs    -> Assets/GameScript/Hotfix/Config/AutoGenerateConfig
-	///   bytes -> Assets/GameRes/Config
+	///   bytes / xml 当前工程没有运行时消费方，导出到工具自己的目录，避免污染 Unity 资源目录
 	/// </summary>
 	public const string DefaultCsDir = "../Assets/GameScript/Hotfix/Config/AutoGenerateConfig";
-	public const string DefaultBytesDir = "../Assets/GameRes/Config";
-	public const string DefaultXmlDir = "../Assets/GameRes/ConfigXml";
+	public const string DefaultBytesDir = "../Export/Bytes";
+	public const string DefaultXmlDir = "../Export/Xml";
 
 	public class ExportWrapper
 	{
@@ -48,10 +47,6 @@ public class ExportConfig
 	/// </summary>
 	public string ExcelPath { get; private set; }
 
-	// 导出配置（客户端默认配置，保留兼容）
-	public ExportWrapper ClientExportInfo { get; private set; }
-	public ExportWrapper ClientExportConfigInfo { get; private set; }
-
 	/// <summary>
 	/// 本次运行实际需要执行的导出任务
 	/// </summary>
@@ -67,9 +62,6 @@ public class ExportConfig
 	public void Init(CommandLineOptions options)
 	{
 		ExcelPath = options.ExcelPath;
-
-		ClientExportInfo = CreateWrapper(typeof(CsExporter));
-		ClientExportConfigInfo = CreateWrapper(typeof(BytesExporter));
 
 		ExportList.Clear();
 		for (int i = 0; i < options.ExporterTypes.Count; i++)
@@ -92,8 +84,9 @@ public class ExportConfig
 			{
 				wrapper.ExportPath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), wrapper.ExportPath));
 
-				// 默认目录保持原有行为：导出前清空
-				wrapper.CleanDirectory = options.CleanExport ?? true;
+				// 默认不清空：导出目录里可能有手工维护的文件，清空会误删；
+				// 需要清空时显式传 --clean
+				wrapper.CleanDirectory = options.CleanExport ?? false;
 			}
 
 			wrapper.ExportPath = Path.GetFullPath(wrapper.ExportPath);

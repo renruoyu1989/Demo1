@@ -1,12 +1,16 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+
+using MotionFramework.Window;
+
+using MotionFramework.Data;
 
 namespace Hotfix
 {
 	/// <summary>主菜单：经典 / 连击入口、设置、帮助、退出与通关进度</summary>
-	[Window(EWindowType.UIMenu, EWindowLayer.Panel)]
-	public class UIMenu : UIWindow
+	[Window((int)EWindowLayer.Panel, true)]
+	public class UIMenu : WindowBase
 	{
 		private Text _progress;
 
@@ -28,10 +32,10 @@ namespace Hotfix
 				new Vector2(420f, 72f), () => OpenSelect(1));
 
 			FerryUIBuilder.CreateButton(root, LocalizationManager.Get("Ferry_Options"), new Vector2(0f, -80f),
-				new Vector2(420f, 72f), () => UIManager.Instance.OpenWindow(EWindowType.UIOptions));
+				new Vector2(420f, 72f), () => WindowManager.Instance.OpenWindow<UIOptions>());
 
 			FerryUIBuilder.CreateButton(root, LocalizationManager.Get("Ferry_Help"), new Vector2(0f, -165f),
-				new Vector2(420f, 72f), () => UIManager.Instance.OpenWindow(EWindowType.UIHelp));
+				new Vector2(420f, 72f), () => WindowManager.Instance.OpenWindow<UIHelp>());
 
 			FerryUIBuilder.CreateButton(root, LocalizationManager.Get("Ferry_Quit"), new Vector2(0f, -250f),
 				new Vector2(420f, 64f), () => Application.Quit(), 24);

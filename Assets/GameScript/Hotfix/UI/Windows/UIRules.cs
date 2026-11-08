@@ -1,7 +1,9 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
+
+using MotionFramework.Window;
 
 namespace Hotfix
 {
@@ -9,8 +11,8 @@ namespace Hotfix
 	/// 谜题规则说明：本关的棋子、吃子关系、数量条件与否定（守卫）规则，全部来自配表。
 	/// 内容可滚动，避免棋子多的关卡把面板撑爆。
 	/// </summary>
-	[Window(EWindowType.UIRules, EWindowLayer.Panel)]
-	public class UIRules : UIWindow
+	[Window((int)EWindowLayer.Panel, false)]
+	public class UIRules : WindowBase
 	{
 		private Text _body;
 
@@ -26,7 +28,7 @@ namespace Hotfix
 			_body = CreateScrollableText(root, new Vector2(0f, 10f), new Vector2(840f, 560f), 22);
 
 			FerryUIBuilder.CreateButton(root, LocalizationManager.Get("Ferry_Close"), new Vector2(0f, -330f),
-				new Vector2(260f, 64f), () => UIManager.Instance.CloseWindow(EWindowType.UIRules));
+				new Vector2(260f, 64f), () => WindowManager.Instance.CloseWindow<UIRules>());
 		}
 
 		/// <summary>可滚动文本区（Viewport + Mask + ScrollRect + 自动撑高的 Content）</summary>

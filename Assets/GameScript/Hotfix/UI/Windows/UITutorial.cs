@@ -1,6 +1,8 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+
+using MotionFramework.Window;
 
 namespace Hotfix
 {
@@ -10,8 +12,8 @@ namespace Hotfix
 	/// 全部通过棋盘相机投影到 UI 画布，并在相机横移时实时跟随。
 	/// 点击任意处进入下一步。
 	/// </summary>
-	[Window(EWindowType.UITutorial, EWindowLayer.Guide)]
-	public class UITutorial : UIWindow
+	[Window((int)EWindowLayer.Guide, false)]
+	public class UITutorial : WindowBase
 	{
 		private static readonly Color BubbleColor = new Color(0.99f, 0.97f, 0.90f, 0.97f);
 		private static readonly Color BubbleTextColor = new Color(0.20f, 0.13f, 0.07f, 1f);
@@ -30,7 +32,7 @@ namespace Hotfix
 		{
 			RectTransform root = FerryUIBuilder.CreateFullScreen(Go.transform, "Root");
 			_canvasRect = Go.transform as RectTransform;
-			_uiCamera = UIManager.Instance.GetUICamera();
+			_uiCamera = WindowManager.Instance.Root.UICamera;
 
 			// 全屏遮罩同时充当「点击任意处继续」的按钮，并拦住棋盘点击
 			Image blockerImage = FerryUIBuilder.CreateBackground(root, new Color(0f, 0f, 0f, 0.32f));
@@ -63,7 +65,7 @@ namespace Hotfix
 
 			if (_steps.Count == 0)
 			{
-				UIManager.Instance.CloseWindow(EWindowType.UITutorial);
+				WindowManager.Instance.CloseWindow<UITutorial>();
 				return;
 			}
 
@@ -89,7 +91,7 @@ namespace Hotfix
 			_index++;
 			if (_index >= _steps.Count)
 			{
-				UIManager.Instance.CloseWindow(EWindowType.UITutorial);
+				WindowManager.Instance.CloseWindow<UITutorial>();
 				return;
 			}
 

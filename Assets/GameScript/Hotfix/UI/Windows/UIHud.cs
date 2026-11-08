@@ -1,7 +1,9 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+
+using MotionFramework.Window;
 
 namespace Hotfix
 {
@@ -10,8 +12,8 @@ namespace Hotfix
 	/// 底部操作条（左右划船 / 船位指示 / 遣散 / 等待队列）、中央提示与常驻操作说明。
 	/// 所有玩法操作只发意图给 FerryGameCommands，不直接改逻辑层。
 	/// </summary>
-	[Window(EWindowType.UIHud, EWindowLayer.HUD)]
-	public class UIHud : UIWindow
+	[Window((int)EWindowLayer.HUD, false)]
+	public class UIHud : WindowBase
 	{
 		private const int MaxBoatDots = 6;
 
@@ -70,9 +72,9 @@ namespace Hotfix
 				FerryUIBuilder.ColorText, new Vector2(-60f, 0f), new Vector2(260f, 60f));
 
 			float[] xs = { 540f, 654f, 768f, 882f };
-			MakeTopButton(bar.transform, "Ferry_Rules", xs[0], () => UIManager.Instance.OpenWindow(EWindowType.UIRules));
+			MakeTopButton(bar.transform, "Ferry_Rules", xs[0], () => WindowManager.Instance.OpenWindow<UIRules>());
 			MakeTopButton(bar.transform, "Ferry_Hint", xs[1], ShowHint);
-			MakeTopButton(bar.transform, "Ferry_Help", xs[2], () => UIManager.Instance.OpenWindow(EWindowType.UIHelp));
+			MakeTopButton(bar.transform, "Ferry_Help", xs[2], () => WindowManager.Instance.OpenWindow<UIHelp>());
 			MakeTopButton(bar.transform, "Ferry_Retry", xs[3], Restart);
 
 			// 第五个功能键放在顶部条右上角外部，避免挤占按钮间距
@@ -325,13 +327,13 @@ namespace Hotfix
 		#region 意图
 		private void Restart()
 		{
-			UIManager.Instance.CloseWindow(EWindowType.UIResult);
+			WindowManager.Instance.CloseWindow<UIResult>();
 			FerryGameCommands.Restart();
 		}
 
 		private void GoSelect()
 		{
-			UIManager.Instance.CloseWindow(EWindowType.UIResult);
+			WindowManager.Instance.CloseWindow<UIResult>();
 			FerryGameCommands.GoSelect();
 		}
 		#endregion

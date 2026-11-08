@@ -1,13 +1,17 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
+
+using MotionFramework.Window;
+
+using MotionFramework.Data;
 
 namespace Hotfix
 {
 	/// <summary>
 	/// 结算弹窗：胜负标题、得分、用时、连击、最高分/总分，以及继续 / 重试 / 关卡列表 / 主菜单。
 	/// </summary>
-	[Window(EWindowType.UIResult, EWindowLayer.Tips)]
-	public class UIResult : UIWindow
+	[Window((int)EWindowLayer.Tips, false)]
+	public class UIResult : WindowBase
 	{
 		private Text _title;
 		private Text _score;
@@ -80,25 +84,25 @@ namespace Hotfix
 
 		private void Next()
 		{
-			UIManager.Instance.CloseWindow(EWindowType.UIResult);
+			WindowManager.Instance.CloseWindow<UIResult>();
 			FerryGameCommands.NextLevel();
 		}
 
 		private void Retry()
 		{
-			UIManager.Instance.CloseWindow(EWindowType.UIResult);
+			WindowManager.Instance.CloseWindow<UIResult>();
 			FerryGameCommands.Restart();
 		}
 
 		private void GoSelect()
 		{
-			UIManager.Instance.CloseWindow(EWindowType.UIResult);
+			WindowManager.Instance.CloseWindow<UIResult>();
 			FerryGameCommands.GoSelect();
 		}
 
 		private void GoMenu()
 		{
-			UIManager.Instance.CloseWindow(EWindowType.UIResult);
+			WindowManager.Instance.CloseWindow<UIResult>();
 			FerryGameCommands.GoMenu();
 		}
 	}

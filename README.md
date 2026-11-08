@@ -2,21 +2,20 @@
 
 演示程序是一款使用[MotionFramework](https://github.com/gmhevinci/MotionFramework)框架开发的**单机** RPG 游戏，所有游戏业务逻辑（窗口、战斗、数据）都作为普通程序集直接编译进工程。
 
-> 本工程已按单机需求改造：移除了 ILRuntime 热更、Network 网络模块、Patch/CDN 补丁流程，并补充了存档系统与多语言系统。
+> 本工程是纯原生单机工程：所有代码随主包编译，运行时不加载外部程序集；没有网络模块与 Patch/CDN 补丁流程。
 
 **注意事项**
 
 1. 框架已内置在 `Assets/MotionFramework`（裁剪版），**请不要再解压 `MotionFramework.zip`**，否则会覆盖成旧版框架导致编译报错。
-2. `GameLauncher.AssetSystemMode` 可切换资源运行模式：`Resources`（编辑器模拟，直接读工程内资源）或 `AssetBundle`（从 StreamingAssets 加载）。
+2. `GameLauncher.PlayMode` 控制资源运行模式：编辑器下强制 `EditorSimulateMode`（直接读工程内资源），打包后走 `OfflinePlayMode`（包体内置资源）。
 
 **程序集结构**
 
 | 程序集 | 作用 |
 |---|---|
-| `MotionFramework` | 引擎层 + 模块层（资源、场景、音频、对象池、事件、配置表、AI、控制台） |
+| `MotionFramework` | 引擎层 + 实际使用的模块（资源、场景、音频、对象池、事件、控制台） |
 | `Script.ThirdParty` | 第三方库（Mono.Xml） |
-| `Script` | 启动层与通用系统（启动器、存档、多语言、UGUI 组件） |
-| `Hotfix` | 游戏业务逻辑（数据、状态机、UI 窗口、战斗） |
+| `Script` | 启动层、通用系统与全部游戏业务逻辑（启动器、存档、多语言、UGUI、状态机、UI 窗口、过河玩法） |
 | `MotionFramework.Editor` / `Script.Editor` | 编辑器工具（AssetBundle 打包、资源导入、UI 工具） |
 
 **存档系统**

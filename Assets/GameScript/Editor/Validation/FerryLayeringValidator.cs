@@ -3,12 +3,11 @@ using System.IO;
 using UnityEditor;
 using UnityEngine;
 
-namespace Hotfix.EditorTools
+namespace Ferryman.EditorTools
 {
 	/// <summary>
 	/// 分层校验：过河逻辑层（Hotfix/Ferryman/Core）不允许引用 UnityEngine
-	/// 原因：业务 asmdef 不能拆（UIManager 靠程序集反射收集窗口），
-	///      所以「逻辑层无 UnityEngine」只能靠这条编辑器检查兜底
+	/// 纯 C# 核心层与 Unity 表现层靠目录约定 + 这条编辑器检查保障
 	/// </summary>
 	public static class FerryLayeringValidator
 	{

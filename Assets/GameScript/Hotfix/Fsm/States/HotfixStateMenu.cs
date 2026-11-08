@@ -1,3 +1,5 @@
+﻿
+using MotionFramework.Window;
 
 namespace Hotfix
 {
@@ -12,7 +14,7 @@ namespace Hotfix
 
 		public override void Enter()
 		{
-			UIManager.Instance.OpenWindow(EWindowType.UIMenu);
+			WindowManager.Instance.OpenWindow<UIMenu>();
 		}
 
 		public override void Execute()
@@ -21,9 +23,9 @@ namespace Hotfix
 
 		public override void Exit()
 		{
-			UIManager.Instance.CloseWindow(EWindowType.UIMenu);
-			UIManager.Instance.CloseWindow(EWindowType.UIHelp);
-			UIManager.Instance.CloseWindow(EWindowType.UIOptions);
+			WindowManager.Instance.CloseWindow<UIMenu>();
+			WindowManager.Instance.CloseWindow<UIHelp>();
+			WindowManager.Instance.CloseWindow<UIOptions>();
 		}
 	}
 }

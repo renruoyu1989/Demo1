@@ -1,5 +1,7 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
+
+using MotionFramework.Window;
 
 namespace Hotfix
 {
@@ -50,11 +52,11 @@ namespace Hotfix
 			_session = FerryGameFlow.Instance.Session;
 			CreateBoard();
 
-			UIManager.Instance.OpenWindow(EWindowType.UIHud);
+			WindowManager.Instance.OpenWindow<UIHud>();
 
 			List<CfgTutorialStepTab> steps = FerryConfigService.Instance.GetTutorialSteps(levelId);
 			if (steps.Count > 0)
-				UIManager.Instance.OpenWindow(EWindowType.UITutorial);
+				WindowManager.Instance.OpenWindow<UITutorial>();
 		}
 
 		private void CreateBoard()
@@ -162,8 +164,8 @@ namespace Hotfix
 			FerryEvent.LevelEnd end = message as FerryEvent.LevelEnd;
 			if (end != null)
 			{
-				UIManager.Instance.CloseWindow(EWindowType.UITutorial);
-				UIManager.Instance.OpenWindow(EWindowType.UIResult);
+				WindowManager.Instance.CloseWindow<UITutorial>();
+				WindowManager.Instance.OpenWindow<UIResult>();
 			}
 		}
 
@@ -185,10 +187,10 @@ namespace Hotfix
 			FerryGameFlow.Instance.ExitLevel();
 			_session = null;
 
-			UIManager.Instance.CloseWindow(EWindowType.UITutorial);
-			UIManager.Instance.CloseWindow(EWindowType.UIResult);
-			UIManager.Instance.CloseWindow(EWindowType.UIRules);
-			UIManager.Instance.CloseWindow(EWindowType.UIHud);
+			WindowManager.Instance.CloseWindow<UITutorial>();
+			WindowManager.Instance.CloseWindow<UIResult>();
+			WindowManager.Instance.CloseWindow<UIRules>();
+			WindowManager.Instance.CloseWindow<UIHud>();
 
 			FerryConfigService.Instance.ReleaseBoardData();
 		}

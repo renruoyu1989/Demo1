@@ -59,6 +59,29 @@ namespace MotionFramework.Window
 		public bool IsPrepare { get { return Go != null; } }
 
 		/// <summary>
+		/// 是否为常驻窗口（关闭时只隐藏不销毁）
+		/// </summary>
+		public bool DontDestroy { protected set; get; } = false;
+
+		/// <summary>
+		/// 窗口是否处于打开状态
+		/// </summary>
+		public bool IsOpen { private set; get; } = true;
+
+		internal void InternalOpen()
+		{
+			IsOpen = true;
+			if (Go != null && Go.activeSelf == false)
+				Go.SetActive(true);
+		}
+		internal void InternalClose()
+		{
+			IsOpen = false;
+			if (Go != null && Go.activeSelf)
+				Go.SetActive(false);
+		}
+
+		/// <summary>
 		/// 窗口深度值
 		/// </summary>
 		public abstract int Depth { get; set; }

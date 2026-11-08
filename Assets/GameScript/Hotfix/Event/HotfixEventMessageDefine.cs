@@ -2,7 +2,7 @@
 namespace Hotfix
 {
 	/// <summary>
-	/// 热更层的事件标签
+	/// 业务层的事件标签
 	/// </summary>
 	public enum HotfixEventMessageTag
 	{

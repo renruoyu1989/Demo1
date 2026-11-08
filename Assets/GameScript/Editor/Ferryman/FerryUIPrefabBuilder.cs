@@ -3,7 +3,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Hotfix.EditorTools
+namespace Ferryman.EditorTools
 {
 	/// <summary>
 	/// 批量生成过河游戏的窗口 prefab

@@ -1,7 +1,7 @@
 using UnityEditor;
 using UnityEngine;
 
-namespace Hotfix.EditorTools
+namespace Ferryman.EditorTools
 {
 	/// <summary>
 	/// 过河美术导入规则：像素风的整图切帧素材，禁止压缩/缩放，否则帧矩形会错位
